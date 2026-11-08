@@ -24,8 +24,5 @@ runs/*
 vendor/
 
 # private working notes (never committed; public facts go in the README)
-docs/VERSIONS.md
-docs/DEVIATIONS.md
-docs/FAILURES.md
-docs/IDEAS.md
-docs/LOG.md
+docs/
+
