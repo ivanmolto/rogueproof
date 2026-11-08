@@ -76,7 +76,7 @@ export interface RunRecord {
     endUserSpendUsd?: number;
   };
   /**
-   * Provisional until task 1.4 pins the real response shape from hosted otari.ai; do not treat as a contract.
+   * Provisional until pinning the real response shape from hosted otari.ai; do not treat as a contract.
    */
   budgetStop?: {
     status: number;

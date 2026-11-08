@@ -23,10 +23,9 @@ describe.skipIf(!inGit)(".gitignore", () => {
     expect(ignored(...paths)).toEqual(paths);
   });
 
-  it("keeps golden runs, the env example, the FAKE mission .env, the briefing and the plan", () => {
-    expect(
-      ignored("runs/golden/x", ".env.example", "scenarios/mission/.env", "docs/rogueproof-briefing.md", "docs/rogueproof-plan.md"),
-    ).toEqual([]);
+  it("keeps golden runs, the env example and the FAKE mission .env", () => {
+    // docs/ is ignored as a whole until the submission review; not asserted either way.
+    expect(ignored("runs/golden/x", ".env.example", "scenarios/mission/.env")).toEqual([]);
   });
 });
 

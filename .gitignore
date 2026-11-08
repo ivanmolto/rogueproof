@@ -23,6 +23,6 @@ runs/*
 # third-party repos (read-only, never committed)
 vendor/
 
-# private working notes (never committed; public facts go in the README)
+# docs/ stays ignored until the submission review decides what to publish
+# (the five private notes VERSIONS/DEVIATIONS/FAILURES/IDEAS/LOG never are).
 docs/
-
