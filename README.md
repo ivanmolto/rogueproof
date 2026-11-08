@@ -25,6 +25,18 @@ attack is replayed under three Otari policies:
 AI decisions are real; harmful actions are simulated. Nothing real leaves the
 machine.
 
+### Beyond the rubric
+
+Otari features we noticed and use (or deliberately don't) that are not among
+the eight scored ones:
+
+- **Zero-data-retention enforcement per workspace.** Each provider carries a
+  ZDR declaration; a workspace can be set to *Require zero data retention*, and
+  every non-ZDR provider — including our own Anthropic key — is blocked for it
+  at once (seen 2026-11-08: 5 of 10 providers went off). We leave it off, since
+  model D is a non-ZDR key, but it is a one-switch governance control a real
+  deployment would want.
+
 ## Repository
 
 | Path | What |
