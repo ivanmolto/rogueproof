@@ -1,0 +1,14 @@
+#!/bin/sh
+# RogueProof pre-commit: refuse any commit whose staged changes contain a secret.
+# Enable once per clone:  brew install gitleaks && git config core.hooksPath .githooks
+# Never bypass with --no-verify.
+set -eu
+
+if ! command -v gitleaks >/dev/null 2>&1; then
+  echo "pre-commit: gitleaks is not installed (brew install gitleaks); refusing to commit." >&2
+  exit 1
+fi
+
+repo_root=$(git rev-parse --show-toplevel)
+exec gitleaks git --pre-commit --staged --redact --no-banner \
+  --config "$repo_root/.gitleaks.toml" --exit-code 1 "$repo_root"

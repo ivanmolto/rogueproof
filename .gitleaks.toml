@@ -1,0 +1,31 @@
+# gitleaks config: the default ruleset plus Otari key shapes.
+# Used by .githooks/pre-commit. Values containing FAKE (fixtures, the mission's
+# fake .env) are allowed; everything else that looks like a key is refused.
+title = "rogueproof"
+
+[extend]
+useDefault = true
+
+[[rules]]
+id = "otari-api-key"
+description = "Otari API key (tk- prefix)"
+regex = '''\btk-[A-Za-z0-9_\-]{6,}'''
+keywords = ["tk-"]
+
+[[rules]]
+id = "otari-gateway-key"
+description = "Otari gateway key (gw_ prefix)"
+regex = '''\bgw_[A-Za-z0-9_\-]{6,}'''
+keywords = ["gw_"]
+
+[[allowlists]]
+description = "Fake values used in fixtures and the mission workspace"
+regexTarget = "match"
+regexes = ['''FAKE''']
+
+[[allowlists]]
+description = "The plan's DoD names the dummy key that the hook must refuse; allowed only there"
+targetRules = ["otari-api-key"]
+condition = "AND"
+paths = ['''(^|/)docs/rogueproof-plan\.md$''']
+regexes = ['''^tk-abcdef$''']
