@@ -1,0 +1,39 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://rogueproof.dev/schemas/timeline.schema.json",
+  "title": "Timeline",
+  "description": "Ordered events of one run, rebuilt by replay. fetch/search/mcp come only from otari_tool_calls; read/tool/deny/judge only from the orchestrator's own records.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "runId", "events"],
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "runId": { "type": "string", "minLength": 1 },
+    "events": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/TimelineEvent" }
+    }
+  },
+  "$defs": {
+    "TimelineEventType": {
+      "title": "TimelineEventType",
+      "type": "string",
+      "enum": ["search", "fetch", "read", "tool", "mcp", "deny", "guardrail", "judge", "post", "budget", "fallback", "step_cap", "done"]
+    },
+    "TimelineEvent": {
+      "title": "TimelineEvent",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["t", "type", "summary"],
+      "properties": {
+        "t": { "type": "number", "minimum": 0, "description": "Milliseconds since run start." },
+        "type": { "$ref": "#/$defs/TimelineEventType" },
+        "summary": { "type": "string" },
+        "cost": { "type": "number", "minimum": 0, "description": "USD." },
+        "endUser": { "type": "string" },
+        "traceId": { "type": "string" },
+        "requestId": { "type": "string", "description": "Otari request id; required in practice for fetch/search/mcp events." }
+      }
+    }
+  }
+}

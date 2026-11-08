@@ -1,0 +1,12 @@
+{
+  "name": "@rogueproof/scenario-collector",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Local MCP mock that records the (fake) exfiltrated payload (task 3.2). No Otari imports.",
+  "license": "Apache-2.0",
+  "type": "module",
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc -p tsconfig.json"
+  }
+}

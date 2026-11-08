@@ -1,0 +1,276 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://rogueproof.dev/schemas/run.schema.json",
+  "title": "RunRecord",
+  "description": "run.json: everything one scenario run produced. Golden copies are redacted before saving.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "runId",
+    "scenario",
+    "mode",
+    "profile",
+    "control",
+    "endUser",
+    "startedAt",
+    "outcome",
+    "modelCalls",
+    "models"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": 1
+    },
+    "runId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "scenario": {
+      "const": "agent-zero"
+    },
+    "mode": {
+      "$ref": "#/$defs/RunMode"
+    },
+    "profile": {
+      "$ref": "#/$defs/ModelProfile"
+    },
+    "control": {
+      "type": "boolean",
+      "description": "True only for the frontier control run (never rubric, never golden)."
+    },
+    "golden": {
+      "type": "boolean"
+    },
+    "endUser": {
+      "type": "string",
+      "minLength": 1
+    },
+    "startedAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "finishedAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "outcome": {
+      "$ref": "#/$defs/Outcome"
+    },
+    "modelCalls": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 40
+    },
+    "models": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["agent"],
+      "properties": {
+        "agent": {
+          "type": "string"
+        },
+        "judge": {
+          "type": "string"
+        },
+        "report": {
+          "type": "string"
+        },
+        "fallback": {
+          "type": "string"
+        }
+      }
+    },
+    "calls": {
+      "type": "array",
+      "description": "One entry per gateway call, in order.",
+      "items": {
+        "$ref": "#/$defs/GatewayCall"
+      }
+    },
+    "policyDecisions": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/PolicyDecision"
+      }
+    },
+    "judgeFindings": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["rule", "explanation"],
+        "properties": {
+          "rule": {
+            "type": "string"
+          },
+          "explanation": {
+            "type": "string"
+          },
+          "requestId": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "collector": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["drops"],
+      "properties": {
+        "drops": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    },
+    "usage": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "promptTokens": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "completionTokens": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "costUsd": {
+          "type": "number",
+          "minimum": 0
+        },
+        "endUserSpendUsd": {
+          "type": "number",
+          "minimum": 0
+        }
+      }
+    },
+    "budgetStop": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status", "message"],
+      "properties": {
+        "status": {
+          "type": "integer"
+        },
+        "message": {
+          "type": "string"
+        },
+        "requestId": {
+          "type": "string"
+        }
+      },
+      "description": "Provisional until pinning the real response shape from hosted otari.ai; do not treat as a contract."
+    }
+  },
+  "$defs": {
+    "Outcome": {
+      "title": "Outcome",
+      "description": "Every gateway call (and the run) resolves to exactly one of these seven values.",
+      "type": "string",
+      "enum": [
+        "ok",
+        "fallback",
+        "guardrail_blocked",
+        "budget_exceeded",
+        "tool_error",
+        "error",
+        "step_cap"
+      ]
+    },
+    "RunMode": {
+      "title": "RunMode",
+      "type": "string",
+      "enum": ["safe", "permissive", "budget", "control"]
+    },
+    "ModelProfile": {
+      "title": "ModelProfile",
+      "type": "string",
+      "enum": ["dev", "rubric"]
+    },
+    "TurnKind": {
+      "title": "TurnKind",
+      "description": "One tool set per turn: Otari refuses web tools mixed with MCP or code execution.",
+      "type": "string",
+      "enum": ["research", "act", "report", "judge"]
+    },
+    "OtariToolCall": {
+      "title": "OtariToolCall",
+      "description": "One entry of a response's otari_tool_calls array (shape pinned in task 1.4). Provisional until task 1.4 pins the real response shape from hosted otari.ai; do not treat as a contract.",
+      "type": "object",
+      "required": ["type"],
+      "properties": {
+        "type": {
+          "type": "string"
+        }
+      }
+    },
+    "GatewayCall": {
+      "title": "GatewayCall",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["turn", "role", "outcome", "otariToolCalls"],
+      "properties": {
+        "turn": {
+          "$ref": "#/$defs/TurnKind"
+        },
+        "role": {
+          "type": "string",
+          "enum": ["agent", "judge", "report", "agent-capped", "agent-service"]
+        },
+        "model": {
+          "type": "string"
+        },
+        "outcome": {
+          "$ref": "#/$defs/Outcome"
+        },
+        "requestId": {
+          "type": "string"
+        },
+        "traceId": {
+          "type": "string"
+        },
+        "otariHeaders": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          },
+          "description": "Provisional until task 1.4 pins the real response shape from hosted otari.ai; do not treat as a contract."
+        },
+        "otariToolCalls": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/OtariToolCall"
+          }
+        },
+        "costUsd": {
+          "type": "number",
+          "minimum": 0
+        }
+      }
+    },
+    "PolicyDecision": {
+      "title": "PolicyDecision",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["tool", "decision"],
+      "properties": {
+        "tool": {
+          "type": "string",
+          "enum": ["read_file", "write_file", "run_command"]
+        },
+        "decision": {
+          "type": "string",
+          "enum": ["allow", "deny"]
+        },
+        "rule": {
+          "type": "string"
+        },
+        "argsSummary": {
+          "type": "string"
+        }
+      }
+    }
+  }
+}

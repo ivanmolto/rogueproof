@@ -1,0 +1,31 @@
+# node / build output
+node_modules/
+dist/
+.next/
+out/
+coverage/
+*.tsbuildinfo
+next-env.d.ts
+.turbo/
+.DS_Store
+npm-debug.log*
+pnpm-debug.log*
+
+# secrets: every .env file except the example and the mission's FAKE fixture (task 3.3)
+.env*
+!.env.example
+!scenarios/mission/.env
+
+# runs: everything except the redacted golden runs
+runs/*
+!runs/golden/
+
+# third-party repos (read-only, never committed)
+vendor/
+
+# private working notes (never committed; public facts go in the README)
+docs/VERSIONS.md
+docs/DEVIATIONS.md
+docs/FAILURES.md
+docs/IDEAS.md
+docs/LOG.md

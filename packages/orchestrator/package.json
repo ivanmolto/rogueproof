@@ -1,0 +1,21 @@
+{
+  "name": "@rogueproof/orchestrator",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Runs the Agent Zero agent loop and scenarios, executes local tools in the sandbox, collects traces and usage. The only Otari gateway in the repo.",
+  "license": "Apache-2.0",
+  "type": "module",
+  "exports": {
+    ".": { "types": "./dist/index.d.ts", "default": "./dist/index.js" }
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc -p tsconfig.json"
+  },
+  "dependencies": {
+    "@rogueproof/shared": "workspace:*"
+  },
+  "devDependencies": {
+    "@rogueproof/testing": "workspace:*"
+  }
+}

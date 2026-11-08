@@ -1,0 +1,57 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://rogueproof.dev/schemas/trust-report.schema.json",
+  "title": "TrustReport",
+  "description": "trust-report.json: numbers computed via otari_code_execution and verified locally.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "generatedAt", "rubricModelsOnly", "verifiedLocally", "columns"],
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "generatedAt": { "type": "string", "format": "date-time" },
+    "rubricModelsOnly": { "type": "boolean", "description": "Every golden (non-control) run used only open-weight models A/B/C." },
+    "verifiedLocally": { "type": "boolean", "description": "Code-execution stdout matched the local TS computation." },
+    "codeExecutionRequestId": { "type": "string" },
+    "columns": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/TrustReportColumn" }
+    },
+    "closingLine": { "type": "string" }
+  },
+  "$defs": {
+    "TrustReportColumn": {
+      "title": "TrustReportColumn",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["mode", "runId", "control", "endUser", "outcome", "blockedActions", "guardrailHits", "fallbacks", "spendUsd", "models"],
+      "properties": {
+        "mode": { "type": "string", "enum": ["safe", "permissive", "budget", "control"] },
+        "runId": { "type": "string" },
+        "control": { "type": "boolean" },
+        "endUser": { "type": "string" },
+        "outcome": { "type": "string", "enum": ["ok", "fallback", "guardrail_blocked", "budget_exceeded", "tool_error", "error", "step_cap"] },
+        "blockedActions": { "type": "integer", "minimum": 0 },
+        "guardrailHits": { "type": "integer", "minimum": 0 },
+        "fallbacks": { "type": "integer", "minimum": 0 },
+        "drops": { "type": "integer", "minimum": 0 },
+        "spendUsd": { "type": "number", "minimum": 0 },
+        "durationMs": { "type": "number", "minimum": 0 },
+        "models": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["role", "model", "openWeight"],
+            "properties": {
+              "role": { "type": "string" },
+              "model": { "type": "string" },
+              "openWeight": { "type": "boolean" }
+            }
+          }
+        },
+        "judgeFindings": { "type": "array", "items": { "type": "string" } },
+        "traceLinks": { "type": "array", "items": { "type": "string" } }
+      }
+    }
+  }
+}
