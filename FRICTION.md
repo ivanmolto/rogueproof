@@ -47,3 +47,19 @@ Otari should do · **Q3** would keep using Otari.
 - Workaround: to fill in
 - Issue/PR: to open
 - Feedback question it answers: Q1 (provisional)
+
+## 2026-11-10 · `temperature` rejected for Anthropic models on chat/completions
+
+- **Tried:** `temperature: 0` on every call, as the plan asks ("temperature 0 where configurable").
+- **Happened:** 400 `temperature: Extra inputs are not permitted` for `anthropic:…` models only; open-weight providers accept it. No `code` in the body, no `Otari-Error-Code` header, so the client could not tell "unsupported parameter" from any other 400.
+- **Repro:** POST /api/v1/chat/completions with `{"model":"anthropic:anthropic/claude-sonnet-4.5","messages":[…],"max_tokens":16,"temperature":0}`.
+- **Time lost:** ~10 min. **Workaround:** send temperature only when set; never on Anthropic.
+- **Feedback:** Q2 (built a per-provider parameter rule myself; the gateway could strip or translate unsupported params, or return `unsupported_parameter` as documented).
+
+## 2026-11-10 · Service key vs normal key is not visible at creation
+
+- **Tried:** created `agent-service` from Access → API keys like the other four, then sent `user: "smoke-user-1"`.
+- **Happened:** 403 `'user' field does not match the authenticated API key's user`. The docs say only a service key may name end users; nothing in the key list marks which kind a key is.
+- **Repro:** any key created with the default options + a `user` value.
+- **Time lost:** ~5 min so far; key must be recreated. **Workaround:** pending (recreate as a service key).
+- **Feedback:** Q2 (per-user budgets are a rubric feature; the key-creation form should ask "service key?" and the list should show it).

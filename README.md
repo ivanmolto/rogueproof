@@ -2,7 +2,7 @@
 
 > Break your AI agents before the real world does.
 
-**Status:** hackathon build, Otari gateway not yet pinned (no gateway calls until task 1.3), built 2026-11-08 · **work in progress**
+**Status:** hackathon build, Otari hosted gateway (EU) tested 2026-11-10 with openai SDK 7.54.0, built 2026-11-10 · **work in progress**
 
 Built on Otari by Mozilla.ai · MozFest Developers Wilding: Online (Mozilla.ai, DoraHacks) · submission branch `devs-wilding`
 
