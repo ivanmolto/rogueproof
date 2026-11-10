@@ -1,0 +1,13 @@
+{
+  "$comment": "rogueproof > Routing > Policies > judge-primary (fallback kind), created 2026-11-10. Exists because model B has a single offering (DeepInfra) and returned 429 'Model busy' during the first smoke; the backup is model C on Fireworks, which also supports tool calling (the report call uses otari_code_execution).",
+  "name": "judge-primary",
+  "kind": "fallback",
+  "workspace": "rogueproof",
+  "appliesTo": "every caller",
+  "main": { "model": "alibaba/qwen-3.5-35b-a3b", "provider": "deepinfra", "providerModel": "Qwen/Qwen3.5-35B-A3B", "selector": "deepinfra:alibaba/qwen-3.5-35b-a3b" },
+  "backups": [
+    { "model": "minimax/minimax-m3.1-flash", "provider": "fireworks", "providerModel": "accounts/fireworks/models/minimax-m3p1-flash", "selector": "fireworks:minimax/minimax-m3.1-flash" }
+  ],
+  "roles": ["judge", "report"],
+  "profile": "rubric"
+}

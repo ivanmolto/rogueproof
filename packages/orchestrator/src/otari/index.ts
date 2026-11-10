@@ -3,7 +3,8 @@ export { OtariClient, RunCounter, END_USER_FIELD, MAX_MODEL_CALLS_PER_RUN, DEFAU
 export type { ChatOptions, ChatResult, Usage, OtariClientOptions } from "./client.js";
 export { ROLES, ROLE_ENV, ROLE_KEY_NAME, PROFILES, readOtariEnv, loadDotEnv, findRepoRoot } from "./env.js";
 export type { Role, Profile, OtariEnv } from "./env.js";
-export { MODELS, SELECTORS, ROUTING_POLICY, OPEN_WEIGHT_MODELS, resolveModel, isOpenWeight } from "./models.js";
+export { MODELS, SELECTORS, POLICIES, OPEN_WEIGHT_MODELS, resolveModel, isOpenWeight, isPolicyName, modelsServedBy } from "./models.js";
+export type { PolicyName } from "./models.js";
 export { assertToolSetAllowed, ToolSetError, isWebTool, isCodeExecutionTool, isGatewayTool } from "./tools.js";
 export type { Tool, GatewayTool, FunctionTool } from "./tools.js";
 export { parseOtariToolCalls } from "./toolCalls.js";

@@ -4,6 +4,11 @@
 # Never bypass with --no-verify.
 set -eu
 
+# GUI git clients (VS Code, Fork, GitHub Desktop) run hooks without the shell's
+# PATH, so Homebrew's folders are added here explicitly.
+PATH="/opt/homebrew/bin:/usr/local/bin:$PATH"
+export PATH
+
 if ! command -v gitleaks >/dev/null 2>&1; then
   echo "pre-commit: gitleaks is not installed (brew install gitleaks); refusing to commit." >&2
   exit 1

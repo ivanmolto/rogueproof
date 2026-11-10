@@ -88,3 +88,36 @@ describe("otari-config/models.json", () => {
     expect(new Set(families).size).toBe(3);
   });
 });
+
+describe("otari-config/routing", () => {
+  const models = read("models.json") as { roles: Record<string, { id: string; openWeights: boolean }> };
+  const openWeight = new Set(Object.values(models.roles).filter((r) => r.openWeights).map((r) => r.id));
+  const providers = read("provider-keys.json") as { hostedProviders: { provider: string }[]; ownKeys: { provider: string }[] };
+  const known = new Set([...providers.hostedProviders, ...providers.ownKeys].map((p) => p.provider));
+  const files = readdirSync(join(DIR, "routing")).filter((f) => f.endsWith(".json"));
+
+  it("has the three policies, each a fallback with at least one backup and a known provider per entry", () => {
+    expect(files.sort()).toEqual(["agent-primary.json", "dev-primary.json", "judge-primary.json"]);
+    for (const f of files) {
+      const p = read(`routing/${f}`) as { name: string; kind: string; main: { provider: string; selector: string; model: string }; backups: { provider: string; selector: string; model: string }[]; roles: string[] };
+      expect(`${p.name}.json`).toBe(f);
+      expect(p.name).not.toMatch(/[:/\s]/);
+      expect(p.kind).toBe("fallback");
+      expect(p.backups.length).toBeGreaterThan(0);
+      for (const e of [p.main, ...p.backups]) {
+        expect(known.has(e.provider), e.provider).toBe(true);
+        expect(e.selector).toBe(`${e.provider}:${e.model}`);
+      }
+      expect(p.roles.length).toBeGreaterThan(0);
+    }
+  });
+
+  it("rubric policies serve only open-weight models; dev-primary serves none", () => {
+    for (const f of files) {
+      const p = read(`routing/${f}`) as { profile: string; main: { model: string }; backups: { model: string }[] };
+      const ids = [p.main.model, ...p.backups.map((b) => b.model)];
+      if (p.profile === "rubric") for (const id of ids) expect(openWeight.has(id), id).toBe(true);
+      else for (const id of ids) expect(openWeight.has(id), id).toBe(false);
+    }
+  });
+});

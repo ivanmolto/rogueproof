@@ -7,6 +7,6 @@ recreate the workspace by hand from these files.
 | Path | Task |
 |---|---|
 | `keys.json`, `budgets/keys.json`, `models.json`, `provider-keys.json`, `tools/web-search.json` | 1.1 |
-| `routing/agent-primary.json`, `routing/dev-primary.json` | 1.2 |
+| `routing/agent-primary.json`, `routing/judge-primary.json`, `routing/dev-primary.json`, `routing/README.md` | 1.2 |
 | `guardrails/injection.json` | 1.6 |
 | `mcp/collector.json` | 3.2 |

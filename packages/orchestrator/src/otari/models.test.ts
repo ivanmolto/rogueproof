@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { findRepoRoot } from "./env.js";
-import { MODELS, OPEN_WEIGHT_MODELS, SELECTORS, isOpenWeight, resolveModel } from "./models.js";
+import { MODELS, OPEN_WEIGHT_MODELS, POLICIES, SELECTORS, isOpenWeight, modelsServedBy, resolveModel } from "./models.js";
 
 describe("models mirror otari-config/models.json", () => {
   const root = findRepoRoot(import.meta.dirname)!;
@@ -18,12 +18,26 @@ describe("models mirror otari-config/models.json", () => {
     expect(cfg.roles["A"]!.selectors).toContain(SELECTORS.A_FALLBACK);
   });
 
-  it("rubric resolves to open-weight models only; dev to D only", () => {
+  it("rubric resolves to policies that serve open-weight models only; dev to dev-primary", () => {
     for (const role of ["agent", "judge", "report", "capped", "service"] as const) {
       expect(isOpenWeight(resolveModel("rubric", role))).toBe(true);
-      expect(resolveModel("dev", role)).toBe(SELECTORS.D);
+      expect(resolveModel("dev", role)).toBe("dev-primary");
     }
+    expect(isOpenWeight("dev-primary")).toBe(false);
     expect(isOpenWeight(SELECTORS.D)).toBe(false);
+    expect(isOpenWeight(SELECTORS.A)).toBe(true);
     expect(OPEN_WEIGHT_MODELS).toHaveLength(3);
+  });
+
+  it("policies mirror otari-config/routing/*.json", () => {
+    for (const name of Object.keys(POLICIES) as (keyof typeof POLICIES)[]) {
+      const file = JSON.parse(readFileSync(join(root, "otari-config", "routing", `${name}.json`), "utf8")) as {
+        name: string; kind: string; profile: string; main: { model: string }; backups: { model: string }[];
+      };
+      expect(file.name).toBe(name);
+      expect(file.kind).toBe("fallback");
+      expect(file.profile).toBe(POLICIES[name].profile);
+      expect([file.main.model, ...file.backups.map((b) => b.model)]).toEqual([...modelsServedBy(name)]);
+    }
   });
 });

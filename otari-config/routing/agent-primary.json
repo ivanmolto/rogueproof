@@ -1,0 +1,14 @@
+{
+  "$comment": "Mirrors the dashboard: rogueproof > Routing > Policies > agent-primary (fallback kind), created 2026-11-10. Callers send the policy name as `model`; the gateway serves the main entry first and tries the backups in order when it fails before answering (rate limit, missing/rejected provider key, invalid request). Not once streaming or a tool call is under way, and not when the remaining budget cannot cover a pricier backup. Provider ids as the dashboard lists them beside each entry.",
+  "name": "agent-primary",
+  "kind": "fallback",
+  "workspace": "rogueproof",
+  "appliesTo": "every caller",
+  "main": { "model": "deepseek/deepseek-v4.1-flash", "provider": "together", "providerModel": "deepseek-ai/DeepSeek-V4.1-Flash", "selector": "together:deepseek/deepseek-v4.1-flash", "note": "own key together-own (R1: own provider first)" },
+  "backups": [
+    { "model": "deepseek/deepseek-v4.1-flash", "provider": "fireworks", "providerModel": "accounts/fireworks/models/deepseek-v4p1-flash", "selector": "fireworks:deepseek/deepseek-v4.1-flash", "note": "hosted copy of the same model, ZDR" },
+    { "model": "minimax/minimax-m3.1-flash", "provider": "fireworks", "providerModel": "accounts/fireworks/models/minimax-m3p1-flash", "selector": "fireworks:minimax/minimax-m3.1-flash", "note": "model C, different family (R6)" }
+  ],
+  "roles": ["agent", "agent-capped", "agent-service"],
+  "profile": "rubric"
+}

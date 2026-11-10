@@ -20,31 +20,52 @@ export const SELECTORS = {
 
 export const OPEN_WEIGHT_MODELS: readonly string[] = [MODELS.A, MODELS.B, MODELS.C];
 
-/** Routing policy names (task 1.2). Until they exist the direct selectors below are used. */
-export const ROUTING_POLICY = { rubric: "agent-primary", dev: "dev-primary" } as const;
+/**
+ * Routing policies (task 1.2), created in the dashboard and mirrored in
+ * otari-config/routing/*.json. A policy name is sent as `model`; the gateway
+ * serves the main entry and falls back through the backups. The models each
+ * policy can serve are listed so a rubric run can be checked for open weights.
+ */
+export const POLICIES = {
+  "agent-primary": { models: [MODELS.A, MODELS.A, MODELS.C], profile: "rubric" },
+  "judge-primary": { models: [MODELS.B, MODELS.C], profile: "rubric" },
+  "dev-primary": { models: [MODELS.D, "anthropic/claude-haiku-5.5"], profile: "dev" },
+} as const;
+export type PolicyName = keyof typeof POLICIES;
 
-const RUBRIC: Record<Role, string> = {
-  agent: SELECTORS.A,
-  judge: SELECTORS.B,
-  report: SELECTORS.B,
-  capped: SELECTORS.A,
-  service: SELECTORS.A,
+const RUBRIC: Record<Role, PolicyName> = {
+  agent: "agent-primary",
+  judge: "judge-primary",
+  report: "judge-primary",
+  capped: "agent-primary",
+  service: "agent-primary",
 };
 
-const DEV: Record<Role, string> = {
-  agent: SELECTORS.D,
-  judge: SELECTORS.D,
-  report: SELECTORS.D,
-  capped: SELECTORS.D,
-  service: SELECTORS.D,
+const DEV: Record<Role, PolicyName> = {
+  agent: "dev-primary",
+  judge: "dev-primary",
+  report: "dev-primary",
+  capped: "dev-primary",
+  service: "dev-primary",
 };
 
-export function resolveModel(profile: Profile, role: Role): string {
+/** The policy name a role sends as `model` under a profile. */
+export function resolveModel(profile: Profile, role: Role): PolicyName {
   return profile === "rubric" ? RUBRIC[role] : DEV[role];
 }
 
-/** True when the selector's model id is one of the open-weight rubric models. */
-export function isOpenWeight(selector: string): boolean {
-  const id = selector.includes(":") ? selector.slice(selector.indexOf(":") + 1) : selector;
-  return OPEN_WEIGHT_MODELS.includes(id);
+export function isPolicyName(s: string): s is PolicyName {
+  return Object.hasOwn(POLICIES, s);
+}
+
+/** Model ids a request can end up on: the policy's list, or the selector's own id. */
+export function modelsServedBy(modelOrPolicy: string): readonly string[] {
+  if (isPolicyName(modelOrPolicy)) return POLICIES[modelOrPolicy].models;
+  const id = modelOrPolicy.includes(":") ? modelOrPolicy.slice(modelOrPolicy.indexOf(":") + 1) : modelOrPolicy;
+  return [id];
+}
+
+/** True when everything the selector or policy can serve is an open-weight rubric model. */
+export function isOpenWeight(modelOrPolicy: string): boolean {
+  return modelsServedBy(modelOrPolicy).every((id) => OPEN_WEIGHT_MODELS.includes(id));
 }

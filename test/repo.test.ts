@@ -42,6 +42,7 @@ describe(".env.example", () => {
       OTARI_API_KEY_REPORT: "",
       OTARI_API_KEY_CAPPED: "",
       OTARI_API_KEY_SERVICE: "",
+      OTARI_API_KEY_FALLBACK_TEST: "",
       MODEL_PROFILE: "dev",
       TUNNEL_TOKEN: "",
       HONEYPOT_PUBLIC_URL: "",

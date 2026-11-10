@@ -38,11 +38,20 @@ Nothing to configure: the ids are catalog ids. Verify each on Models →
 search → detail page: "Open weights" badge, Tool calling tick, and that the
 providers table lists every selector in `models.json`.
 
+## 5. Routing policies (`routing/*.json`)
+
+Workspace → Routing → Policies → **Create policy** → Fallback → Continue. For each
+file in `routing/`: Name = `name`; Main model = search the model, pick the entry
+whose providers include `main.provider`, set Provider to it; Backup n = the same
+for each `backups[n]`; check the Preview line names the main provider; Create.
+Verify: the Policies list shows the three rows with the providers in
+`docs/evidence/day1/routing-policies.webp`, and `pnpm smoke` in both profiles
+answers with the policy name echoed in `model` and the expected `Otari-Provider`.
+
 ## Still to come
 
 | Step | File | Task |
 |---|---|---|
-| Routing policies `agent-primary`, `dev-primary` | `routing/` | 1.2 |
 | Fallback test workspace `rogueproof-fallback-test` | `routing/fallback-test.md` | 1.2 |
 | Inference guardrail | `guardrails/` | 1.6 |
 | Collector MCP server registration | `mcp/collector.json` | 3.2 |

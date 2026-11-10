@@ -1,0 +1,13 @@
+{
+  "$comment": "rogueproof > Routing > Policies > dev-primary (fallback kind), created 2026-11-10. MODEL_PROFILE=dev only: Claude via the own anthropic-dev provider key, never a rubric role. The form requires a backup; Haiku 5.5 stays on the same key so no open-weight model can enter a dev run.",
+  "name": "dev-primary",
+  "kind": "fallback",
+  "workspace": "rogueproof",
+  "appliesTo": "every caller",
+  "main": { "model": "anthropic/claude-sonnet-4.5", "provider": "anthropic", "providerModel": "claude-sonnet-4-5-20250929", "selector": "anthropic:anthropic/claude-sonnet-4.5" },
+  "backups": [
+    { "model": "anthropic/claude-haiku-5.5", "provider": "anthropic", "providerModel": "claude-haiku-5-5", "selector": "anthropic:anthropic/claude-haiku-5.5" }
+  ],
+  "roles": ["agent", "judge", "report", "agent-capped", "agent-service"],
+  "profile": "dev"
+}
