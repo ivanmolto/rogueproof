@@ -29,6 +29,9 @@ const openaiPattern = {
   group: ["openai/*"],
   message: "Only packages/orchestrator/src/otari/ may import the OpenAI-compatible SDK.",
 };
+// Matches the host in string and template literals only. It catches mistakes
+// (a stray fetch to the gateway outside the otari module), not deliberate
+// evasion such as concatenation; test/boundaries.test.ts states the intent.
 const otariUrlMessage = "Only packages/orchestrator/src/otari/ may reference the Otari API host.";
 const otariUrlSyntax = [
   { selector: "Literal[value=/api\\.otari\\.ai/]", message: otariUrlMessage },
