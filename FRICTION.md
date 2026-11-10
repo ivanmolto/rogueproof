@@ -63,3 +63,11 @@ Otari should do · **Q3** would keep using Otari.
 - **Repro:** any key created with the default options + a `user` value.
 - **Time lost:** ~5 min so far; key must be recreated. **Workaround:** pending (recreate as a service key).
 - **Feedback:** Q2 (per-user budgets are a rubric feature; the key-creation form should ask "service key?" and the list should show it).
+
+## 2026-11-10 · gitleaks pre-commit hook invisible to VS Code's git
+
+- **Tried:** committing from the VS Code Source Control panel with the gitleaks pre-commit hook enabled.
+- **Happened:** "gitleaks is not installed (brew install gitleaks); refusing to commit." The same commit works from the terminal. GUI git clients start hooks without the login shell's PATH, so `/opt/homebrew/bin` is missing.
+- **Repro:** any repo with `core.hooksPath .githooks` and a hook that calls a Homebrew binary by name; commit from VS Code on macOS.
+- **Time lost:** ~5 min. **Workaround:** the hook prepends `/opt/homebrew/bin:/usr/local/bin` to PATH before looking for gitleaks.
+- **Feedback:** not Otari-related; repo tooling. Kept here so the hook's PATH line is not "cleaned up" later.

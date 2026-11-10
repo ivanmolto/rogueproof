@@ -1,17 +1,57 @@
 {
-  "$comment": "Organization-level provider keys (Organization > Providers > Inference), then enabled for the workspace (Workspaces > rogueproof > Providers). Names only; the key values are entered once in the dashboard and never stored in this repo. Enabling an own key for a provider replaces the hosted copy for that provider ('Not used, your key serves this provider').",
+  "$comment": "Organization-level provider keys (Organization > Providers > Inference), then enabled for the workspace (Workspaces > rogueproof > Providers). Names only; the key values are entered once in the dashboard and never stored in this repo. Enabling an own key for a provider replaces the hosted copy for that provider ('Not used, your key serves this provider'). Organization > Providers > Inference lists each key with Serving (models the key can serve, e.g. together-own 51 of 269), the API key's last 4 chars, API base, and a star marking the org default per provider.",
   "ownKeys": [
-    { "name": "anthropic-dev", "provider": "anthropic", "purpose": "model D: dev iteration and the labelled frontier-control run; never a rubric role", "zeroDataRetention": false },
-    { "name": "together-own",  "provider": "together",  "purpose": "model A on an own key; the R1 fallback goes from here to a hosted copy", "zeroDataRetention": false }
+    {
+      "name": "anthropic-dev",
+      "provider": "anthropic",
+      "purpose": "model D: dev iteration and the labelled frontier-control run; never a rubric role",
+      "zeroDataRetention": false
+    },
+    {
+      "name": "together-own",
+      "provider": "together",
+      "purpose": "model A on an own key; the R1 fallback goes from here to a hosted copy",
+      "zeroDataRetention": false
+    },
+    {
+      "name": "together-invalid",
+      "provider": "together",
+      "purpose": "deliberately invalid value for the R1 fallback recipe; pinned only in workspace rogueproof-fallback-test, never the org default (star stays on together-own)",
+      "zeroDataRetention": false,
+      "invalid": true
+    }
   ],
   "hostedProviders": [
-    { "provider": "bedrock",   "zeroDataRetention": true  },
-    { "provider": "deepinfra", "zeroDataRetention": false },
-    { "provider": "fireworks", "zeroDataRetention": true  },
-    { "provider": "mistral",   "zeroDataRetention": true  },
-    { "provider": "ovhcloud",  "zeroDataRetention": true  },
-    { "provider": "together",  "zeroDataRetention": true, "note": "not used while together-own is enabled" },
-    { "provider": "tokenhub-china", "zeroDataRetention": false, "note": "left enabled; nothing routes there unless a model id names it" }
+    {
+      "provider": "bedrock",
+      "zeroDataRetention": true
+    },
+    {
+      "provider": "deepinfra",
+      "zeroDataRetention": false
+    },
+    {
+      "provider": "fireworks",
+      "zeroDataRetention": true
+    },
+    {
+      "provider": "mistral",
+      "zeroDataRetention": true
+    },
+    {
+      "provider": "ovhcloud",
+      "zeroDataRetention": true
+    },
+    {
+      "provider": "together",
+      "zeroDataRetention": true,
+      "note": "not used while together-own is enabled"
+    },
+    {
+      "provider": "tokenhub-china",
+      "zeroDataRetention": false,
+      "note": "left enabled; nothing routes there unless a model id names it"
+    }
   ],
   "workspaceSettings": {
     "requireZeroDataRetention": false,

@@ -58,5 +58,19 @@
       "shortId": "8ycS",
       "why": "created 2026-11-08 as a plain key; a plain key may not name an end user (403). Deleted 2026-11-10 and recreated as a service key. The dashboard offers delete, not disable, for user-created keys."
     }
-  ]
+  ],
+  "otherWorkspaces": {
+    "rogueproof-fallback-test": {
+      "keys": [
+        {
+          "name": "fallback-test",
+          "shortId": "sNC2",
+          "env": "OTARI_API_KEY_FALLBACK_TEST",
+          "budget": 0.5,
+          "role": "invalid-provider-key fallback recipe only (task 1.2 / 4.5)",
+          "expires": "2026-12-01"
+        }
+      ]
+    }
+  }
 }

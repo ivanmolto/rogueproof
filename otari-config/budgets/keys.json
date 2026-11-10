@@ -32,5 +32,12 @@
     "agent": "74a69b66-0a48-465f-987d-8c9db1fb5edf",
     "judge": "01237063-462a-4de6-bc99-00ffd675f41b",
     "report": "5e1e1915-4b1b-4467-89d9-6bbbce1f8c68"
+  },
+  "otherWorkspaces": {
+    "rogueproof-fallback-test": {
+      "fallback-test": {
+        "budget": 0.5
+      }
+    }
   }
 }
