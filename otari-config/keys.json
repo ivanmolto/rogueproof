@@ -1,0 +1,17 @@
+{
+  "$comment": "Workspace API keys on otari.ai (rogueproof). Names and short ids only; secrets live in .env as OTARI_API_KEY_<ROLE>. Created 2026-11-08 in the dashboard, Access > API keys. Shown once at creation. All expire 2026-12-01.",
+  "workspace": "rogueproof",
+  "region": "eu",
+  "baseUrl": "https://eu.api.otari.ai/api/v1",
+  "authHeader": "Otari-Key",
+  "keys": [
+    { "name": "agent",         "shortId": "QOfy", "env": "OTARI_API_KEY_AGENT",   "role": "agent model (A) in Safe and Permissive runs",         "models": "all" },
+    { "name": "judge",         "shortId": "0Qhl", "env": "OTARI_API_KEY_JUDGE",   "role": "judge model (B) explains a denial",                     "models": "all" },
+    { "name": "report",        "shortId": "033A", "env": "OTARI_API_KEY_REPORT",  "role": "report model (B) computes the Trust Report via code execution", "models": "all" },
+    { "name": "agent-capped",  "shortId": "l1lx", "env": "OTARI_API_KEY_CAPPED",  "role": "Budget-limited mode; request_limit set per run, reset after", "models": "all" },
+    { "name": "agent-service", "shortId": "8ycS", "env": "OTARI_API_KEY_SERVICE", "role": "service key; every request names an end user (R8)",    "models": "all" }
+  ],
+  "disabled": [
+    { "name": "Setup guide", "shortId": "GfMM", "why": "onboarding key issued by the dashboard; disabled 2026-11-08, never used by the repo" }
+  ]
+}

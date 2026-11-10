@@ -1,0 +1,12 @@
+{
+  "$comment": "Per-key budgets in USD, set in the dashboard on each key (Access > API keys). Enforced by the gateway: 'requests on them are billed to you and spend against your budget'. Total cap 9.00 against a 22.00 balance. request_limit for Budget-limited mode is set on agent-capped at run time (task 4.4) and reset to null afterwards.",
+  "currency": "USD",
+  "keys": {
+    "agent":         { "budget": 3.00 },
+    "judge":         { "budget": 1.00 },
+    "report":        { "budget": 1.00 },
+    "agent-capped":  { "budget": 1.00, "requestLimit": null },
+    "agent-service": { "budget": 3.00 }
+  },
+  "total": 9.00
+}

@@ -1,0 +1,20 @@
+{
+  "$comment": "Organization-level provider keys (Organization > Providers > Inference), then enabled for the workspace (Workspaces > rogueproof > Providers). Names only; the key values are entered once in the dashboard and never stored in this repo. Enabling an own key for a provider replaces the hosted copy for that provider ('Not used, your key serves this provider').",
+  "ownKeys": [
+    { "name": "anthropic-dev", "provider": "anthropic", "purpose": "model D: dev iteration and the labelled frontier-control run; never a rubric role", "zeroDataRetention": false },
+    { "name": "together-own",  "provider": "together",  "purpose": "model A on an own key; the R1 fallback goes from here to a hosted copy", "zeroDataRetention": false }
+  ],
+  "hostedProviders": [
+    { "provider": "bedrock",   "zeroDataRetention": true  },
+    { "provider": "deepinfra", "zeroDataRetention": false },
+    { "provider": "fireworks", "zeroDataRetention": true  },
+    { "provider": "mistral",   "zeroDataRetention": true  },
+    { "provider": "ovhcloud",  "zeroDataRetention": true  },
+    { "provider": "together",  "zeroDataRetention": true, "note": "not used while together-own is enabled" },
+    { "provider": "tokenhub-china", "zeroDataRetention": false, "note": "left enabled; nothing routes there unless a model id names it" }
+  ],
+  "workspaceSettings": {
+    "requireZeroDataRetention": false,
+    "modelsAllowed": "all"
+  }
+}

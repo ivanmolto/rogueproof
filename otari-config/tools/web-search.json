@@ -1,0 +1,9 @@
+{
+  "$comment": "Workspace > Tools > Web search (Beta). Mirrors the dashboard on 2026-11-10. otari_web_search and otari_web_fetch are gateway-run; evidence is the response's otari_tool_calls entry.",
+  "allowInWorkspace": true,
+  "searchWith": "tavily",
+  "fetchWith": "builtin_fetch",
+  "providerWebSearchRunBy": null,
+  "providerWebFetchRunBy": null,
+  "note": "The two 'Who runs provider web search/fetch' settings concern providers' native tools (Anthropic/OpenAI web_search); RogueProof uses only otari_web_search / otari_web_fetch, so they stay Not set."
+}
