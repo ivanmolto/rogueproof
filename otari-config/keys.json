@@ -5,13 +5,58 @@
   "baseUrl": "https://eu.api.otari.ai/api/v1",
   "authHeader": "Otari-Key",
   "keys": [
-    { "name": "agent",         "shortId": "QOfy", "env": "OTARI_API_KEY_AGENT",   "role": "agent model (A) in Safe and Permissive runs",         "models": "all" },
-    { "name": "judge",         "shortId": "0Qhl", "env": "OTARI_API_KEY_JUDGE",   "role": "judge model (B) explains a denial",                     "models": "all" },
-    { "name": "report",        "shortId": "033A", "env": "OTARI_API_KEY_REPORT",  "role": "report model (B) computes the Trust Report via code execution", "models": "all" },
-    { "name": "agent-capped",  "shortId": "l1lx", "env": "OTARI_API_KEY_CAPPED",  "role": "Budget-limited mode; request_limit set per run, reset after", "models": "all" },
-    { "name": "agent-service", "shortId": "8ycS", "env": "OTARI_API_KEY_SERVICE", "role": "service key; every request names an end user (R8)",    "models": "all" }
+    {
+      "name": "agent",
+      "shortId": "QOfy",
+      "env": "OTARI_API_KEY_AGENT",
+      "role": "agent model (A) in Safe and Permissive runs",
+      "models": "all"
+    },
+    {
+      "name": "judge",
+      "shortId": "0Qhl",
+      "env": "OTARI_API_KEY_JUDGE",
+      "role": "judge model (B) explains a denial",
+      "models": "all"
+    },
+    {
+      "name": "report",
+      "shortId": "033A",
+      "env": "OTARI_API_KEY_REPORT",
+      "role": "report model (B) computes the Trust Report via code execution",
+      "models": "all"
+    },
+    {
+      "name": "agent-capped",
+      "shortId": "l1lx",
+      "env": "OTARI_API_KEY_CAPPED",
+      "role": "Budget-limited mode; request_limit set per run, reset after",
+      "models": "all"
+    },
+    {
+      "name": "agent-service",
+      "shortId": "t8xF",
+      "env": "OTARI_API_KEY_SERVICE",
+      "role": "service key; every request names an end user in `user`, created on first use and billed to the end-user budget (R8)",
+      "models": "all",
+      "serviceKey": true,
+      "endUserBudget": "end-user",
+      "maxEndUsers": 20,
+      "mismatchedUser": "deployment default"
+    }
   ],
   "disabled": [
-    { "name": "Setup guide", "shortId": "GfMM", "why": "onboarding key issued by the dashboard; disabled 2026-11-08, never used by the repo" }
+    {
+      "name": "Setup guide",
+      "shortId": "GfMM",
+      "why": "onboarding key issued by the dashboard; disabled 2026-11-08, never used by the repo"
+    }
+  ],
+  "deleted": [
+    {
+      "name": "agent-service",
+      "shortId": "8ycS",
+      "why": "created 2026-11-08 as a plain key; a plain key may not name an end user (403). Deleted 2026-11-10 and recreated as a service key. The dashboard offers delete, not disable, for user-created keys."
+    }
   ]
 }

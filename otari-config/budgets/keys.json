@@ -1,12 +1,36 @@
 {
-  "$comment": "Per-key budgets in USD, set in the dashboard on each key (Access > API keys). Enforced by the gateway: 'requests on them are billed to you and spend against your budget'. Total cap 9.00 against a 22.00 balance. request_limit for Budget-limited mode is set on agent-capped at run time (task 4.4) and reset to null afterwards.",
+  "$comment": "Per-key budgets in USD, set in the dashboard on each key (Access > API keys). Enforced by the gateway: 'requests on them are billed to you and spend against your budget'. Total cap 9.00 against a 22.00 balance. request_limit for Budget-limited mode is set on agent-capped at run time (task 4.4) and reset to null afterwards. Key budgets reset monthly on the 1st at 00:00 UTC (dashboard default). The end-user budget never resets. Budgets live at organization level (Organization > Spend & budgets); a budget caps nothing until a key or end user points at it.",
   "currency": "USD",
   "keys": {
-    "agent":         { "budget": 3.00 },
-    "judge":         { "budget": 1.00 },
-    "report":        { "budget": 1.00 },
-    "agent-capped":  { "budget": 1.00, "requestLimit": null },
-    "agent-service": { "budget": 3.00 }
+    "agent": {
+      "budget": 3.0
+    },
+    "judge": {
+      "budget": 1.0
+    },
+    "report": {
+      "budget": 1.0
+    },
+    "agent-capped": {
+      "budget": 1.0,
+      "requestLimit": null
+    },
+    "agent-service": {
+      "budget": 3.0
+    }
   },
-  "total": 9.00
+  "total": 9.0,
+  "endUser": {
+    "name": "end-user",
+    "budget": 0.5,
+    "resets": "never",
+    "purpose": "default end-user budget of the agent-service service key (R8); each end user named in `user` is created on first use and billed to its own copy",
+    "budgetId": "5a0599b6-6ae6-4dfb-866b-9318dfa02c48",
+    "attachedTo": "agent-service service key: End-user budgets + Default end-user budget; Max end users 20"
+  },
+  "keyBudgetIds": {
+    "agent": "74a69b66-0a48-465f-987d-8c9db1fb5edf",
+    "judge": "01237063-462a-4de6-bc99-00ffd675f41b",
+    "report": "5e1e1915-4b1b-4467-89d9-6bbbce1f8c68"
+  }
 }
