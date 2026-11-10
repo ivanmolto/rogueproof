@@ -83,12 +83,22 @@ describe("OtariClient.chat outcomes", () => {
     expect(r.otariToolCalls[0]?.error).toBeDefined();
   });
 
-  it("error: the gateway's web-tool + MCP refusal is a 400 and is not retried", async () => {
+  it("error: the gateway's MCP tool-name conflict with a built-in is a 400 and is not retried", async () => {
     const { client, calls } = make([loadFixture("error", "web-plus-mcp-refused"), loadFixture("ok", "hello")]);
     const r = await client.chat("agent", hello);
     expect(r.outcome).toBe("error");
     expect(r.error?.detail).toMatch(/web_fetch/);
     expect(calls).toHaveLength(1);
+  });
+
+  it("error: MCP refusals seen live (unknown server id 404, inline URL 400) carry only {detail} and are not retried", async () => {
+    for (const name of ["mcp-server-not-found-404", "mcp-inline-not-allowed-400"]) {
+      const { client, calls } = make([loadFixture("error", name), loadFixture("ok", "hello")]);
+      const r = await client.chat("agent", hello);
+      expect(r.outcome).toBe("error");
+      expect(r.error?.detail).toMatch(/MCP server/);
+      expect(calls).toHaveLength(1);
+    }
   });
 
   it("error: 424 provider_not_configured is not retried", async () => {

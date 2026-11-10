@@ -1,0 +1,11 @@
+{
+  "$comment": "Synthetic Otari fixture: real field names, fake ids/costs/models. Shape seen live in task 1.4: {detail} only, no code, no otari-error-code header.",
+  "status": 400,
+  "headers": {
+    "content-type": "application/json",
+    "otari-request-id": "req_fake_0008"
+  },
+  "body": {
+    "detail": "This workspace does not let a request name MCP servers by URL. Use a stored server through mcp_server_ids, or ask a workspace admin to allow request MCP servers."
+  }
+}
