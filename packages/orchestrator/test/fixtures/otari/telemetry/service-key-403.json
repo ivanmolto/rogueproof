@@ -1,0 +1,6 @@
+{
+  "$comment": "Synthetic Otari fixture: real field names (seen live in task 1.5), fake ids/costs/models.",
+  "status": 403,
+  "headers": { "content-type": "application/json" },
+  "body": { "detail": "This endpoint requires a service key." }
+}

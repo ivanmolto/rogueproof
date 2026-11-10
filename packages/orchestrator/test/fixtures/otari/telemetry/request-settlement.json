@@ -1,0 +1,6 @@
+{
+  "$comment": "Synthetic Otari fixture: real field names (seen live in task 1.5), fake ids/costs/models.",
+  "status": 200,
+  "headers": { "content-type": "application/json" },
+  "body": { "request_id": "00000000-0000-4000-8000-000000000001", "status": "success", "cost_usd": "0.000010", "prompt_tokens": 12, "completion_tokens": 7, "total_tokens": 19, "row_count": 1 }
+}

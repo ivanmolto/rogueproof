@@ -15,6 +15,11 @@ export function loadFixture(outcome: Outcome, name: string): Fixture {
   return JSON.parse(readFileSync(join(FIXTURE_ROOT, outcome, `${name}.json`), "utf8")) as Fixture;
 }
 
+/** Telemetry (read-side) fixtures live beside the outcome directories, under `telemetry/`. */
+export function loadTelemetryFixture(name: string): Fixture {
+  return JSON.parse(readFileSync(join(FIXTURE_ROOT, "telemetry", `${name}.json`), "utf8")) as Fixture;
+}
+
 export function listFixtures(): Record<Outcome, string[]> {
   const out = {} as Record<Outcome, string[]>;
   for (const o of OUTCOMES) {

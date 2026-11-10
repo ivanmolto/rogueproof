@@ -1,0 +1,6 @@
+{
+  "$comment": "Synthetic Otari fixture: real field names (seen live in task 1.5), fake ids/costs/models.",
+  "status": 404,
+  "headers": { "content-type": "application/json" },
+  "body": { "detail": "End user 'no-such-user' not found" }
+}

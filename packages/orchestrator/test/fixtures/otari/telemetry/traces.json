@@ -1,0 +1,11 @@
+{
+  "$comment": "Synthetic Otari fixture: field names from the gateway's OpenAPI (TraceListPublic); hosted answers 401 to API keys, so this shape was never seen live. Fake ids/costs.",
+  "status": 200,
+  "headers": { "content-type": "application/json" },
+  "body": {
+    "items": [
+      { "trace_id": "trace_fake_0001", "workspace_id": "ws_fake_1", "user_id": "usr_fake_1", "api_key_id": "00000000-0000-4000-8000-0000000000a1", "session_source": "gateway", "harness": null, "name": "fake session", "started_at": "2026-01-01T00:00:00Z", "last_activity_at": "2026-01-01T00:01:00Z", "step_count": 3, "span_count": 5, "error_count": 0, "input_tokens": 300, "output_tokens": 100, "cost": 0.001 }
+    ],
+    "has_more": false
+  }
+}

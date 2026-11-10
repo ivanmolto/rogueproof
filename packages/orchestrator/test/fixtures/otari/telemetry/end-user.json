@@ -1,0 +1,11 @@
+{
+  "$comment": "Synthetic Otari fixture: real field names (seen live in task 1.5), fake ids/costs/models.",
+  "status": 200,
+  "headers": { "content-type": "application/json" },
+  "body": {
+    "user_id": "eu_fake0000000000000000000000000001", "external_id": "fake-run-1", "owner_user_id": "svc_fake000000000000000000000000001",
+    "budget_id": "00000000-0000-4000-8000-0000000000b1", "blocked": false, "spend": 0.00075, "reserved": 0.0,
+    "current_tokens": 250, "current_requests": 2, "budget_started_at": "2026-01-01T00:00:00+00:00",
+    "next_budget_reset_at": null, "created_at": "2026-01-01T00:00:00+00:00"
+  }
+}
