@@ -6,16 +6,21 @@
   "license": "Apache-2.0",
   "type": "module",
   "exports": {
-    ".": { "types": "./dist/index.d.ts", "default": "./dist/index.js" }
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
   },
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
     "typecheck": "tsc -p tsconfig.json"
   },
   "dependencies": {
-    "@rogueproof/shared": "workspace:*"
+    "@rogueproof/shared": "workspace:*",
+    "openai": "7.54.0"
   },
   "devDependencies": {
-    "@rogueproof/testing": "workspace:*"
+    "@rogueproof/testing": "workspace:*",
+    "fast-check": "4.10.2"
   }
 }

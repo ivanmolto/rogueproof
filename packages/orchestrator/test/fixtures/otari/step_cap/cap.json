@@ -1,0 +1,10 @@
+{
+  "$comment": "Synthetic Otari fixture: real field names, fake ids/costs/models.",
+  "status": 0,
+  "headers": {},
+  "body": {
+    "$comment": "step_cap is a run-level outcome: the client refuses to send call 41. No HTTP exchange happens; this fixture documents the shape the run records.",
+    "code": "step_cap",
+    "detail": "run reached the 40-call cap"
+  }
+}

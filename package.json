@@ -2,7 +2,7 @@
   "name": "rogueproof",
   "version": "0.0.0",
   "private": true,
-  "description": "RogueProof — the proving ground for autonomous AI. Built on Otari by Mozilla.ai.",
+  "description": "RogueProof \u2014 the proving ground for autonomous AI. Built on Otari by Mozilla.ai.",
   "license": "Apache-2.0",
   "type": "module",
   "packageManager": "pnpm@11.11.0",
@@ -17,7 +17,8 @@
     "lint": "eslint .",
     "typecheck": "tsc -p tsconfig.json && pnpm -r typecheck",
     "gen:schemas": "pnpm --filter @rogueproof/shared gen:schemas",
-    "gen:schemas:check": "pnpm --filter @rogueproof/shared gen:schemas:check"
+    "gen:schemas:check": "pnpm --filter @rogueproof/shared gen:schemas:check",
+    "smoke": "pnpm -r build && node packages/orchestrator/dist/smoke.js"
   },
   "devDependencies": {
     "@eslint/js": "10.0.1",

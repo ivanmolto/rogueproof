@@ -1,0 +1,13 @@
+{
+  "$comment": "Synthetic Otari fixture: real field names, fake ids/costs/models.",
+  "status": 502,
+  "headers": {
+    "content-type": "application/json",
+    "otari-request-id": "req_fake_0007",
+    "otari-error-code": "provider_error"
+  },
+  "body": {
+    "code": "provider_error",
+    "detail": "upstream returned 503"
+  }
+}

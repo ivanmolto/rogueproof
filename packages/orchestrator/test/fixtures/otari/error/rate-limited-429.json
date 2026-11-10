@@ -1,0 +1,14 @@
+{
+  "$comment": "Synthetic Otari fixture: real field names, fake ids/costs/models.",
+  "status": 429,
+  "headers": {
+    "content-type": "application/json",
+    "otari-request-id": "req_fake_0008",
+    "otari-error-code": "rate_limited",
+    "retry-after": "1"
+  },
+  "body": {
+    "code": "rate_limited",
+    "detail": "slow down"
+  }
+}

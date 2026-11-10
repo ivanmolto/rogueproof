@@ -1,7 +1,15 @@
-/**
- * The only Otari gateway in the repo. Will hold the keys per role,
- * set the end user, capture Otari-* headers, normalise the seven outcomes,
- * bound retries and record redacted request/response pairs.
- * Empty until "Route all LLM calls through otari.ai".
- */
 export const MODULE = "otari" as const;
+export { OtariClient, RunCounter, END_USER_FIELD, MAX_MODEL_CALLS_PER_RUN, DEFAULT_MAX_TOKENS } from "./client.js";
+export type { ChatOptions, ChatResult, Usage, OtariClientOptions } from "./client.js";
+export { ROLES, ROLE_ENV, ROLE_KEY_NAME, PROFILES, readOtariEnv, loadDotEnv, findRepoRoot } from "./env.js";
+export type { Role, Profile, OtariEnv } from "./env.js";
+export { MODELS, SELECTORS, ROUTING_POLICY, OPEN_WEIGHT_MODELS, resolveModel, isOpenWeight } from "./models.js";
+export { assertToolSetAllowed, ToolSetError, isWebTool, isCodeExecutionTool, isGatewayTool } from "./tools.js";
+export type { Tool, GatewayTool, FunctionTool } from "./tools.js";
+export { parseOtariToolCalls } from "./toolCalls.js";
+export type { OtariToolCall, OtariSearchCall, OtariFetchCall, OtariCodeCall, OtariMcpCall } from "./toolCalls.js";
+export { classifySuccess, classifyError, classifyTransportError } from "./outcome.js";
+export type { Outcome, Classified } from "./outcome.js";
+export { redact, redactString, pickResponseHeaders, REDACTED } from "./redact.js";
+export { Recorder } from "./records.js";
+export type { GatewayRecord } from "./records.js";

@@ -1,0 +1,14 @@
+{
+  "$comment": "Synthetic Otari fixture: real field names, fake ids/costs/models.",
+  "status": 403,
+  "headers": {
+    "content-type": "application/json",
+    "otari-request-id": "req_fake_0002",
+    "otari-error-code": "guardrail_violation",
+    "otari-guardrails": "[{\"profile\":\"fake-injection\",\"mode\":\"block\",\"valid\":false,\"score\":0.97,\"status\":\"blocked\",\"reason\":\"prompt injection\"}]"
+  },
+  "body": {
+    "code": "guardrail_violation",
+    "detail": "Request blocked by guardrail profile fake-injection"
+  }
+}

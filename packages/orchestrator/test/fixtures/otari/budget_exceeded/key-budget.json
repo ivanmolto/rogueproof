@@ -1,0 +1,14 @@
+{
+  "$comment": "Synthetic Otari fixture: real field names, fake ids/costs/models.",
+  "status": 403,
+  "headers": {
+    "content-type": "application/json",
+    "otari-request-id": "req_fake_0003",
+    "otari-error-code": "budget_exceeded",
+    "otari-budget-scope": "api_token"
+  },
+  "body": {
+    "code": "budget_exceeded",
+    "detail": "API key budget has exceeded budget limit"
+  }
+}

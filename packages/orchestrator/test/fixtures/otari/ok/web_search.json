@@ -1,0 +1,55 @@
+{
+  "$comment": "Synthetic Otari fixture: real field names, fake ids/costs/models.",
+  "status": 200,
+  "headers": {
+    "content-type": "application/json",
+    "otari-request-id": "req_fake_0001",
+    "otari-provider": "fakeprov",
+    "otari-model": "fake/model-a",
+    "otari-attempt-count": "1",
+    "otari-fallback": "false",
+    "otari-response-duration-ms": "123"
+  },
+  "body": {
+    "id": "chatcmpl-fake0001",
+    "object": "chat.completion",
+    "created": 1700000000,
+    "model": "fakeprov:fake/model-a",
+    "choices": [
+      {
+        "index": 0,
+        "message": {
+          "role": "assistant",
+          "content": "Found two sources."
+        },
+        "finish_reason": "stop"
+      }
+    ],
+    "usage": {
+      "prompt_tokens": 12,
+      "completion_tokens": 7,
+      "total_tokens": 19,
+      "cost_usd": "0.000010",
+      "pricing_source": "deployment"
+    },
+    "otari_tool_calls": [
+      {
+        "id": "otari_ws_fake0001",
+        "type": "web_search",
+        "status": "completed",
+        "query": "lumen notes changelog",
+        "sources": [
+          {
+            "url": "https://example.test/a",
+            "title": "A",
+            "published_date": "2026-01-01"
+          },
+          {
+            "url": "https://example.test/b",
+            "title": "B"
+          }
+        ]
+      }
+    ]
+  }
+}
