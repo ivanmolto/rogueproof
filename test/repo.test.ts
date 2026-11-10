@@ -36,7 +36,7 @@ describe(".env.example", () => {
       .filter((l) => l && !l.startsWith("#"));
     const env = Object.fromEntries(lines.map((l) => l.split(/=(.*)/s).slice(0, 2)));
     expect(env).toEqual({
-      OTARI_BASE_URL: `https://${["api", "otari", "ai"].join(".")}/api/v1`,
+      OTARI_BASE_URL: `https://${["eu", "api", "otari", "ai"].join(".")}/api/v1`,
       OTARI_API_KEY_AGENT: "",
       OTARI_API_KEY_JUDGE: "",
       OTARI_API_KEY_REPORT: "",
@@ -72,10 +72,12 @@ describe.skipIf(!hasGitleaks)("gitleaks config (.gitleaks.toml)", () => {
   // Key-shaped strings are assembled at runtime so this file passes the hook itself.
   const tk = (rest: string) => ["tk", rest].join("-");
   const gw = (rest: string) => ["gw", rest].join("_");
+  const otk = (rest: string) => ["otk", "v1", "eu", rest].join("_");
 
   it("flags Otari-style keys", () => {
     expect(scan(`OTARI_API_KEY_AGENT=${tk("abcdef")}\n`)).toBe(1);
     expect(scan(`key: ${gw("abcdef123456")}\n`)).toBe(1);
+    expect(scan(`OTARI_API_KEY_AGENT=${otk("UyghdHKabcdefGfMM")}\n`)).toBe(1);
   });
 
   it("allows the dummy key only inside docs/rogueproof-plan.md", () => {
@@ -87,6 +89,7 @@ describe.skipIf(!hasGitleaks)("gitleaks config (.gitleaks.toml)", () => {
   it("lets FAKE fixture values and plain prose through", () => {
     expect(scan(`OTARI_API_KEY_AGENT=${tk("FAKE-fixture-0001")}\n`)).toBe(0);
     expect(scan("assert the log contains no `tk-` or `gw_` prefixed strings\n")).toBe(0);
+    expect(scan("keys look like otk_v1_eu_... and are shown once\n")).toBe(0);
   });
 });
 

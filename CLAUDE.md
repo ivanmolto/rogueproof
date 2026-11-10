@@ -49,7 +49,7 @@ Read `docs/rogueproof-briefing.md` for the product and `docs/rogueproof-plan.md`
 - Never log, print, commit or send Otari keys, provider keys, tunnel tokens or MCP auth headers. Keys come from `.env` (gitignored) locally and from the host's env vars in any deployment. Keys are server-side only; never `NEXT_PUBLIC_`.
 - A gitleaks pre-commit hook lives in `.githooks/`; enable it once per clone with `brew install gitleaks && git config core.hooksPath .githooks`. Never bypass it with `--no-verify`.
 - Logs may contain request ids, trace ids, end-user ids and costs; never bearer tokens.
-- A test that reads log output must assert it contains no `tk-` or `gw_` prefixed strings and no bearer tokens.
+- A test that reads log output must assert it contains no `otk_v1_`, `tk-` or `gw_` prefixed strings and no bearer tokens or `Otari-Key` header values.
 - Credit budgets: otari.ai credit is for rubric runs only (target ≤ $6 for the week); Anthropic credit is for `dev` and the control run. Any batch job (reliability pass, re-recording golden runs) prints its estimated call count and cost and stops for confirmation before spending.
 
 ## Standards and specs

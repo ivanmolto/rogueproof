@@ -72,7 +72,8 @@ keys are server-side only.
 ### Secret scanning (enable once per clone)
 
 A gitleaks pre-commit hook lives in `.githooks/` and refuses commits that
-contain secrets, including Otari-style `tk-…` / `gw_…` keys (`.gitleaks.toml`).
+contain secrets, including Otari workspace keys (`otk_v1_<region>_…`, plus the
+`tk-…` / `gw_…` shapes the plan assumed) (`.gitleaks.toml`).
 
 ```bash
 brew install gitleaks && git config core.hooksPath .githooks

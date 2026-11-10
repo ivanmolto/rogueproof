@@ -7,8 +7,14 @@ title = "rogueproof"
 useDefault = true
 
 [[rules]]
+id = "otari-workspace-key"
+description = "Otari workspace API key as issued by the dashboard (otk_v1_<region>_ prefix, seen 2026-11-08)"
+regex = '''\botk_v1_[a-z]{2,3}_[A-Za-z0-9_\-]{6,}'''
+keywords = ["otk_v1_"]
+
+[[rules]]
 id = "otari-api-key"
-description = "Otari API key (tk- prefix)"
+description = "Otari API key (tk- prefix, the shape the plan assumed)"
 regex = '''\btk-[A-Za-z0-9_\-]{6,}'''
 keywords = ["tk-"]
 
