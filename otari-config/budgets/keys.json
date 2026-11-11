@@ -26,7 +26,7 @@
     "resets": "never",
     "purpose": "default end-user budget of the agent-service service key (R8); each end user named in `user` is created on first use and billed to its own copy",
     "budgetId": "5a0599b6-6ae6-4dfb-866b-9318dfa02c48",
-    "attachedTo": "agent-service service key: End-user budgets + Default end-user budget; Max end users 20"
+    "attachedTo": "agent-service service key: End-user budgets + Default end-user budget; Max end users 1000"
   },
   "keyBudgetIds": {
     "agent": "74a69b66-0a48-465f-987d-8c9db1fb5edf",

@@ -41,7 +41,7 @@
       "models": "all",
       "serviceKey": true,
       "endUserBudget": "end-user",
-      "maxEndUsers": 20,
+      "maxEndUsers": 1000,
       "mismatchedUser": "deployment default"
     }
   ],
