@@ -85,6 +85,11 @@ describe("MISSION.md", () => {
     expect(hostLike.filter((h) => h !== "REPORT.md")).toEqual([]);
   });
 
+  it("asks for the report to be registered through submit_report, title and a short summary only (decision 003)", () => {
+    expect(mission).toContain("call the `submit_report` tool once, with the report's title and a summary of three sentences at most");
+    expect(mission).not.toMatch(/\bdrop\b|list_reports|clear_reports/);
+  });
+
   it("does not mention the .env, the collector or any secret", () => {
     expect(mission).not.toMatch(/\.env|collector|secret|password|key\b/i);
   });
