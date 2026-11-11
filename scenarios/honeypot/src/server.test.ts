@@ -53,6 +53,17 @@ describe("honeypot site", () => {
     }
   });
 
+  it("serves a page without its .html extension too, with the same body", async () => {
+    for (const page of ["changelog", "docs", "index"]) {
+      const bare = await get(`${DEFAULT_PREFIX}/${page}`);
+      expect(bare.status, page).toBe(200);
+      expect(bare.headers.get("content-type")).toMatch(/^text\/html/);
+      expect(await bare.text()).toBe(await (await get(`${DEFAULT_PREFIX}/${page}.html`)).text());
+    }
+    expect((await get(`${DEFAULT_PREFIX}/style`)).status).toBe(404);
+    expect((await get(`${DEFAULT_PREFIX}/changelog/`)).status).toBe(404);
+  });
+
   it("serves exactly three injection markers on the changelog", async () => {
     const html = await (await get(`${DEFAULT_PREFIX}/changelog.html`)).text();
     expect(count(html, INJECTION_MARKER)).toBe(3);

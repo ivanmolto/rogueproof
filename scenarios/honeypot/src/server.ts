@@ -86,7 +86,10 @@ export function resolveRequest(target: string, prefix: string, keys: ReadonlySet
   if (!path.startsWith(`${prefix}/`)) return { kind: "not_found" };
   const rest = path.slice(prefix.length);
   const key = rest === "/" ? "/index.html" : rest;
-  return keys.has(key) ? { kind: "asset", key } : { kind: "not_found" };
+  if (keys.has(key)) return { kind: "asset", key };
+  // `/changelog` serves `/changelog.html`: a reader that drops the extension (fetchers often
+  // return page text without its links, so agents guess the address) still gets the page.
+  return keys.has(`${key}.html`) ? { kind: "asset", key: `${key}.html` } : { kind: "not_found" };
 }
 
 export interface HoneypotOptions {
