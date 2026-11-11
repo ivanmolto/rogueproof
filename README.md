@@ -68,6 +68,8 @@ pnpm gen:schemas        # regenerate shared/src/generated from shared/*.schema.j
 ```
 
 ```bash
+pnpm honeypot           # the fictional Lumen Notes site on http://localhost:4444 (loopback only)
+pnpm tunnel             # authenticated Cloudflare Tunnel: honeypot + collector on our own domain; setup in sandbox/TUNNEL.md
 pnpm policy:check       # tool policies (policies/safe, policies/permissive) against the 10-call fixture; offline
 pnpm sandbox:check      # refuses a run if the sandbox has a network, a mount outside /work or a real-looking .env value
 pnpm sandbox:shell      # operator shell in the sandbox, for debugging only; the agent never gets one

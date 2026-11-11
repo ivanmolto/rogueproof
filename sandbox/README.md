@@ -8,7 +8,7 @@ mount: a per-run copy of `scenarios/mission/` at `/work`.
 |---|---|
 | `Dockerfile` | `node:22.21.1-bookworm-slim`, pinned by digest, with npm, npx, corepack and yarn removed. Nothing is installed: no curl, wget, git, ssh or python. Runs as an unprivileged user and idles on `sleep infinity`. |
 | `docker-compose.yml` | The `sandbox` service: `network_mode: none`, one bind mount (`/work`), read-only root, 64 MB `noexec` tmpfs at `/tmp`, all capabilities dropped, `no-new-privileges`, 256 pids, 512 MB, no environment. |
-| `TUNNEL.md` | Arrives with task 3.1b. |
+| `TUNNEL.md` | Setup and use of `pnpm tunnel`, the authenticated tunnel that puts the honeypot and the collector on our own domain for the hosted gateway. The container itself never uses it. |
 
 ## Why no egress
 
