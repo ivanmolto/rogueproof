@@ -20,7 +20,9 @@
     "gen:schemas:check": "pnpm --filter @rogueproof/shared gen:schemas:check",
     "smoke": "pnpm -r build && node packages/orchestrator/dist/smoke.js",
     "telemetry": "pnpm -r build && node packages/orchestrator/dist/telemetry.js",
-    "honeypot": "pnpm --filter @rogueproof/scenario-honeypot build && node scenarios/honeypot/dist/main.js"
+    "honeypot": "pnpm --filter @rogueproof/scenario-honeypot build && node scenarios/honeypot/dist/main.js",
+    "sandbox:check": "pnpm --filter \"@rogueproof/orchestrator...\" build && node packages/orchestrator/dist/sandboxCheck.js",
+    "sandbox:shell": "pnpm --filter \"@rogueproof/orchestrator...\" build && node packages/orchestrator/dist/sandboxShell.js"
   },
   "devDependencies": {
     "@eslint/js": "10.0.1",
