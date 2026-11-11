@@ -88,11 +88,49 @@ test("Safe: events in order, a denial flashes red for 600 ms, cost card is the r
   expect(errors).toEqual([]);
 });
 
+test("Safe: deny and judge events carry disabled feedback buttons with a tooltip; a forced click sends nothing (task 5.5)", async ({ page }) => {
+  await page.goto("/");
+  await page.getByRole("button", { name: "Replay golden" }).click();
+  await page.getByRole("button", { name: "Skip to end" }).click();
+  for (const type of ["deny", "judge"]) {
+    const row = page.locator(`[data-testid="event"][data-type="${type}"]`).first();
+    for (const v of ["up", "down"]) {
+      const button = row.getByTestId(`feedback-${v}`);
+      await expect(button).toBeDisabled();
+      await expect(button).toHaveAttribute("title", /POST \/api\/v1\/feedback/);
+    }
+    await expect(row.getByTestId("feedback")).toHaveAttribute("title", /Nothing is sent/);
+    // Only the judge's explanation is an Otari request; the denial itself has no id to rate.
+    const saysNoId = expect(row.getByTestId("feedback-up"));
+    await (type === "deny" ? saysNoId : saysNoId.not).toHaveAttribute("title", /no Otari request id/);
+  }
+  const others = page.locator('[data-testid="event"]:not([data-type="deny"]):not([data-type="judge"])');
+  await expect(others.getByTestId("feedback")).toHaveCount(0);
+  // The reason is also on the page itself, once, for readers without a mouse.
+  await expect(page.getByTestId("feedback-note")).toHaveCount(1);
+  await expect(page.getByTestId("feedback-note")).toContainText("Nothing is sent");
+
+  // `disabled` alone proves little: strip it and click every button. If one is ever given a
+  // handler that calls out, or that changes the page, this is where it shows.
+  const buttons = page.locator('[data-testid="feedback-up"], [data-testid="feedback-down"]');
+  const count = await buttons.count();
+  expect(count).toBeGreaterThanOrEqual(4);
+  const before = await page.locator("main").innerText();
+  const requests: string[] = [];
+  page.on("request", (r) => requests.push(`${r.method()} ${r.url()}`));
+  await buttons.evaluateAll((els) => els.forEach((el) => ((el as HTMLButtonElement).disabled = false)));
+  for (let i = 0; i < count; i++) await buttons.nth(i).click();
+  await page.waitForTimeout(300);
+  expect(requests).toEqual([]);
+  expect(await page.locator("main").innerText()).toBe(before);
+});
+
 test("Permissive: events in order, cost card is the run total", async ({ page }) => {
   const errors = watchConsole(page);
   const shown = await replay(page, "Permissive");
   expectLoggedOrder(shown, "permissive");
   expect(shown).not.toContain("deny");
+  await expect(page.getByTestId("feedback-note")).toHaveCount(0);
   expect(shown.at(-1)).toBe("done");
   const r = record("permissive");
   await expect(page.getByTestId("card-cost-value")).toHaveText(usd(r.usage.costUsd));

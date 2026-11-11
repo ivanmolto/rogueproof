@@ -2,7 +2,7 @@
 import type { TimelineEvent } from "@rogueproof/shared";
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";
-import { STEP_MAX_MS, STEP_MIN_MS, cardsAt, collectorNote, isRunKey, runKeyFor, statusText, stepDelay, type ReplayView } from "./view";
+import { FEEDBACK_DENY_EXTRA, FEEDBACK_DISABLED_REASON, feedbackDisabledReason, hasFeedbackControls, STEP_MAX_MS, STEP_MIN_MS, cardsAt, collectorNote, isRunKey, runKeyFor, statusText, stepDelay, type ReplayView } from "./view";
 
 const ev = (type: TimelineEvent["type"], over: Partial<TimelineEvent> = {}): TimelineEvent => ({ t: 0, type, summary: type, ...over });
 const view = (events: TimelineEvent[], over: Partial<ReplayView> = {}): ReplayView => ({
@@ -103,5 +103,19 @@ describe("playback", () => {
     expect(runKeyFor("budget", true)).toBe("budget");
     expect(isRunKey("permissive")).toBe(true);
     expect(isRunKey("../../.env")).toBe(false);
+  });
+});
+
+// Task 5.5: the feedback controls exist on denials and judge explanations only. Their tooltip is checked where it is rendered (e2e/replay.spec.ts).
+describe("feedback controls", () => {
+  it("sit on deny and judge events and on no other type", () => {
+    const types: TimelineEvent["type"][] = ["search", "fetch", "mcp", "post", "guardrail", "budget", "fallback", "read", "tool", "deny", "judge", "step_cap", "done"];
+    expect(types.filter(hasFeedbackControls)).toEqual(["deny", "judge"]);
+  });
+
+  it("a deny's tooltip adds that it has no Otari request id; a judge's does not", () => {
+    expect(feedbackDisabledReason("judge")).toBe(FEEDBACK_DISABLED_REASON);
+    expect(feedbackDisabledReason("deny")).toBe(`${FEEDBACK_DISABLED_REASON} ${FEEDBACK_DENY_EXTRA}`);
+    expect(FEEDBACK_DENY_EXTRA).toMatch(/no Otari request id/);
   });
 });
