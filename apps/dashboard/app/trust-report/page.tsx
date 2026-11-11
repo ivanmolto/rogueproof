@@ -77,16 +77,16 @@ export default async function TrustReportPage() {
           </p>
 
           <div className="mt-4 overflow-x-auto">
-            <table className="w-full border-collapse text-left text-sm">
+            {/* Fixed layout: the columns share the width, so long run ids and model names wrap inside their cell instead of pushing the last column out of view. */}
+            <table className="w-full min-w-[40rem] table-fixed border-collapse text-left text-sm">
               <thead>
                 <tr className="border-b border-neutral-400 align-bottom">
-                  <th scope="col" className="py-1.5 pr-3 font-normal text-neutral-600">
+                  <th scope="col" className="w-36 py-1.5 pr-3 font-normal text-neutral-600">
                     <span className="sr-only">Measure</span>
                   </th>
                   {view.columns.map((c) => (
-                    <th key={c.key} scope="col" data-testid={`column-${c.key}`} className="min-w-36 py-1.5 pr-3 font-semibold">
+                    <th key={c.key} scope="col" data-testid={`column-${c.key}`} className="py-1.5 pr-3 font-semibold">
                       {c.label}
-                      {c.control ? <span className="block text-xs font-normal text-neutral-600">frontier model, not a rubric run</span> : null}
                     </th>
                   ))}
                 </tr>
@@ -114,7 +114,7 @@ export default async function TrustReportPage() {
                     Models
                   </th>
                   {view.columns.map((c) => (
-                    <td key={c.key} data-testid={`cell-models-${c.key}`} className="py-1.5 pr-3">
+                    <td key={c.key} data-testid={`cell-models-${c.key}`} className="break-words py-1.5 pr-3">
                       {c.models.map((m) => (
                         <div key={m.role} data-testid="model" className="mb-1 break-words">
                           <span className="text-neutral-600">{m.role}:</span> {m.model}
