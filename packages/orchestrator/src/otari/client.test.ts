@@ -74,6 +74,17 @@ describe("OtariClient.chat outcomes", () => {
     expect(calls).toHaveLength(1);
   });
 
+  it("guardrail_blocked: the live shape (code nested under body.detail, no Otari-Error-Code header) is recognised and never retried", async () => {
+    const { client, calls } = make([loadFixture("guardrail_blocked", "injection-live-shape"), loadFixture("ok", "hello")]);
+    const r = await client.chat("agent", hello);
+    expect(r.outcome).toBe("guardrail_blocked");
+    expect(r.status).toBe(403);
+    expect(r.error?.code).toBe("guardrail_violation");
+    expect(r.error?.detail).toContain("fake-injection");
+    expect(r.headers["otari-error-code"]).toBeUndefined();
+    expect(calls).toHaveLength(1);
+  });
+
   it.each(["fetch-failed", "call-limit"])("tool_error: %s is a 200 with a failed otari_tool_calls entry", async (name) => {
     const { client } = make([loadFixture("tool_error", name)]);
     const r = await client.chat("agent", hello);

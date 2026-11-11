@@ -1,0 +1,15 @@
+{
+  "$comment": "Synthetic Otari fixture in the shape hosted otari.ai answered on 2026-11-11 for a mandated blocking guardrail (task 1.6): no otari-error-code and no otari-guardrails header; code and the guardrails list are nested under body.detail. Fake ids and profile name.",
+  "status": 403,
+  "headers": {
+    "content-type": "application/json",
+    "otari-request-id": "req_fake_0020"
+  },
+  "body": {
+    "detail": {
+      "message": "Request blocked by guardrail policy.",
+      "code": "guardrail_violation",
+      "guardrails": [{ "profile": "fake-injection", "explanation": null, "score": 1.0 }]
+    }
+  }
+}

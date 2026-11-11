@@ -50,7 +50,14 @@ export function classifySuccess(headers: Record<string, string>, toolCalls: read
 export function classifyError(status: number, headers: Record<string, string>, body: unknown): Classified {
   const b = (body && typeof body === "object" ? body : {}) as Record<string, unknown>;
   const nested = (b["error"] && typeof b["error"] === "object" ? b["error"] : {}) as Record<string, unknown>;
-  const code = header(headers, "otari-error-code") ?? (typeof b["code"] === "string" ? b["code"] : undefined) ?? (typeof nested["code"] === "string" ? nested["code"] : undefined);
+  // Hosted otari.ai nests the code under `detail` for a guardrail block and sends no
+  // Otari-Error-Code header (2026-11-11, task 1.6): {"detail":{"message","code","guardrails":[…]}}.
+  const detailObj = (b["detail"] && typeof b["detail"] === "object" ? b["detail"] : {}) as Record<string, unknown>;
+  const code =
+    header(headers, "otari-error-code") ??
+    (typeof b["code"] === "string" ? b["code"] : undefined) ??
+    (typeof detailObj["code"] === "string" ? detailObj["code"] : undefined) ??
+    (typeof nested["code"] === "string" ? nested["code"] : undefined);
   const detailRaw = b["detail"] ?? nested["message"] ?? b["message"];
   const detail = typeof detailRaw === "string" ? detailRaw : detailRaw === undefined ? undefined : JSON.stringify(detailRaw);
   const retryAfterSeconds = parseRetryAfter(header(headers, "retry-after"));
