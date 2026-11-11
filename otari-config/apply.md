@@ -48,11 +48,30 @@ Verify: the Policies list shows the three rows with the providers in
 `docs/evidence/day1/routing-policies.webp`, and `pnpm smoke` in both profiles
 answers with the policy name echoed in `model` and the expected `Otari-Provider`.
 
+## 6. Organization: inference guardrail (`guardrails/injection.json`)
+
+1. Organization → Guardrails → **Configure guardrail**. What do you want checked =
+   Prompt injection; Which guardrail = Lakera Guard · Lakera; Name `lakera-guard`;
+   Api key = your Lakera key (platform.lakera.ai, free Community tier). Leave
+   Advanced (Endpoint, Project id) empty. Wait for Status to go Starting → Active.
+2. The lightning icon on the row is the test action. The injection text in
+   `guardrails/injection.json` must come back **Flagged**, the benign line **Passed**.
+3. **Mandate a guardrail**. Runs on = A guardrail you set up; Guardrail and profile
+   `lakera-guard`; Mode **Monitor**; If it can't run **Refuse the request**; Runs in
+   **Chosen workspaces**, only `rogueproof`. Parameters empty. A configured
+   guardrail changes no request until this step. (Block with no parameters
+   refuses even "Reply with the single word: hello", score 0.4; the pencil icon
+   on the row changes the mode.)
+Verify: the "Where they run" table shows the row, and `pnpm smoke` answers 6/6
+with an `otari-guardrails` header naming `lakera-guard`, mode `monitor`, on every
+call. In Block mode the injection text answers 403 with `detail.code`
+`guardrail_violation` and `detail.guardrails[0].profile` `lakera-guard`.
+Evidence: `docs/evidence/day1/guardrail-*.webp`.
+
 ## Still to come
 
 | Step | File | Task |
 |---|---|---|
 | Fallback test workspace `rogueproof-fallback-test` | `routing/fallback-test.md` | 1.2 |
-| Inference guardrail | `guardrails/` | 1.6 |
 | Collector MCP server registration | `mcp/collector.json` | 3.2 |
 | Code execution tool | `tools/code-execution.json` | 5.1 |

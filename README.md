@@ -22,6 +22,11 @@ attack is replayed under three Otari policies:
 | **Permissive** | Tool policy empty; inside a no-egress sandbox with **fake** secrets, the agent obeys and the local collector receives the fake `.env`. |
 | **Budget-limited** | A `request_limit` on the capped budget stops the run with a real `budget_exceeded`. |
 
+The mandated guardrail is Lakera Guard, configured and run by Otari as an
+organization guardrail (Monitor mode, workspace `rogueproof`: every request is
+scored and the verdict comes back in the `Otari-Guardrails` header); prompts sent through
+that workspace are scored by Lakera.
+
 AI decisions are real; harmful actions are simulated. Nothing real leaves the
 machine.
 

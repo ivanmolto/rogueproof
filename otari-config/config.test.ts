@@ -121,3 +121,32 @@ describe("otari-config/routing", () => {
     }
   });
 });
+
+describe("otari-config/guardrails/injection.json", () => {
+  const g = read("guardrails/injection.json") as {
+    configured: { name: string; checksCovered: string[]; status: string };
+    mandate: { guardrail: string; profile: string; mode: string; ifItCantRun: string; workspaces: string[] };
+    observed: { monitor: { status: number; header: { "otari-guardrails": { profile: string; mode: string; score: number }[] }; injection: { header: { "otari-guardrails": { profile: string; mode: string; score: number }[] } } }; blockedWhileInBlockMode: { status: number; body: { detail: { code: string; guardrails: { profile: string }[] } } } };
+  };
+  it("mandates the configured guardrail in monitor mode on rogueproof only", () => {
+    expect(g.mandate.guardrail).toBe(g.configured.name);
+    expect(g.configured.checksCovered).toContain("Prompt injection");
+    expect(g.configured.status).toBe("Active");
+    expect(g.mandate.mode).toBe("monitor");
+    expect(g.mandate.ifItCantRun).toBe("refuse");
+    expect(g.mandate.workspaces).toEqual(["rogueproof"]);
+  });
+  it("records the observed block with the mandated profile", () => {
+    const b = g.observed.blockedWhileInBlockMode;
+    expect(b.status).toBe(403);
+    expect(b.body.detail.code).toBe("guardrail_violation");
+    expect(b.body.detail.guardrails.map((x) => x.profile)).toEqual([g.mandate.profile]);
+  });
+  it("records the monitored flag header with the mandated profile and mode", () => {
+    expect(g.observed.monitor.status).toBe(200);
+    expect(g.observed.monitor.header["otari-guardrails"]).toMatchObject([{ profile: g.mandate.profile, mode: g.mandate.mode }]);
+    const inj = g.observed.monitor.injection.header["otari-guardrails"][0]!;
+    expect(inj).toMatchObject({ profile: g.mandate.profile, mode: "monitor" });
+    expect(inj.score).toBeGreaterThan(g.observed.monitor.header["otari-guardrails"][0]!.score);
+  });
+});
