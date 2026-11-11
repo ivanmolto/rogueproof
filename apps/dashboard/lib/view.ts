@@ -186,7 +186,22 @@ export function stepDelay(events: readonly TimelineEvent[], i: number): number {
   return Math.round(Math.max(STEP_MIN_MS, Math.min(STEP_MAX_MS, Number.isFinite(gap) ? gap : STEP_MIN_MS)));
 }
 
-export const formatUsd = (v: number): string => `$${v.toFixed(4)}`;
+/** Who made a decision. The two are never given the same label. */
+export const ENFORCER_TOOL_POLICY = "tool policy (orchestrator)";
+export const ENFORCER_GUARDRAIL = "Otari guardrail";
+
+/**
+ * Who enforced the decision an event records: the orchestrator's tool policy
+ * for a `deny`, Otari's inference guardrail for a `guardrail`. Null for every
+ * other event, which is no policy decision.
+ */
+export function enforcerLabel(type: TimelineEvent["type"]): typeof ENFORCER_TOOL_POLICY | typeof ENFORCER_GUARDRAIL | null {
+  if (type === "deny") return ENFORCER_TOOL_POLICY;
+  if (type === "guardrail") return ENFORCER_GUARDRAIL;
+  return null;
+}
+
+export const formatUsd =(v: number): string => `$${v.toFixed(4)}`;
 export const formatT = (ms: number): string => `${(ms / 1000).toFixed(1)}s`;
 
 const STATUS_TEXT: Record<Cards["status"], string> = {

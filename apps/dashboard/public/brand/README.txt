@@ -55,4 +55,5 @@ NOTES
   style block for prefers-color-scheme switching.
 - Readability at 16px is judged by eye, not machine-checked.
 - The dashboard references the favicon, the Apple touch icon and the social
-  card (app/layout.tsx) and flat-mark/mark-light.svg in its header.
+  card (app/layout.tsx) and favicon/favicon-64-light.svg (the zero on its yellow
+  tag) in its header.

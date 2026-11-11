@@ -3,8 +3,10 @@
 import type { TimelineEvent, TimelineEventType } from "@rogueproof/shared";
 import Link from "next/link";
 import { useEffect, useRef, useState, type ReactNode } from "react";
+import type { ComparisonView } from "../lib/compare";
 import { createSseDecoder } from "../lib/sse";
-import { FEEDBACK_DENY_EXTRA, FEEDBACK_DISABLED_REASON, LIVE_CLIENT_TIMEOUT_MS, MODES, feedbackDisabledReason, hasFeedbackControls, isLiveModeKey, cardsAt, collectorNote, formatT, formatUsd, isFailedOutcome, liveView, parseProfile, profileNote, runKeyFor, statusText, stepDelay, type LiveProfile, type ModeKey, type ReplayView } from "../lib/view";
+import PolicyComparison from "./PolicyComparison";
+import { FEEDBACK_DENY_EXTRA, FEEDBACK_DISABLED_REASON, LIVE_CLIENT_TIMEOUT_MS, MODES, feedbackDisabledReason, hasFeedbackControls, isLiveModeKey, cardsAt, collectorNote, enforcerLabel, formatT, formatUsd, isFailedOutcome, liveView, parseProfile, profileNote, runKeyFor, statusText, stepDelay, type LiveProfile, type ModeKey, type ReplayView } from "../lib/view";
 
 /** A live run started from this page: going, saved, or without a usable result. */
 type Live = { state: "running"; info: string | null } | { state: "ended" } | { state: "failed"; reason: string };
@@ -16,12 +18,12 @@ const SOURCE: Record<TimelineEventType, string> = {
   fetch: "Otari web fetch",
   mcp: "Otari MCP",
   post: "Otari MCP · collector",
-  guardrail: "Otari inference guardrail",
+  guardrail: "Otari guardrail",
   budget: "Otari budget",
   fallback: "Otari routing",
   read: "sandbox",
   tool: "sandbox",
-  deny: "tool policy · app-level, in the orchestrator",
+  deny: "tool policy (orchestrator)",
   judge: "judge model",
   step_cap: "orchestrator",
   done: "orchestrator",
@@ -63,6 +65,9 @@ function QuietRow({ event }: { event: TimelineEvent }) {
     <li data-testid="event" data-type={event.type} data-quiet="true" className="flex flex-wrap items-baseline gap-x-2 px-2 py-0.5 text-xs text-neutral-500">
       <span className="w-12 shrink-0 tabular-nums">{formatT(event.t)}</span>
       <span className="rounded border border-neutral-200 px-1.5">{event.type}</span>
+      <span data-testid="enforcer" className="rounded border border-neutral-300 px-1.5 text-neutral-700">
+        {enforcerLabel(event.type)} · flagged, served
+      </span>
       <span className="min-w-0 break-words">{event.summary}</span>
       {event.requestId !== undefined ? <span className="break-all font-mono text-[11px]">Otari request {event.requestId}</span> : null}
     </li>
@@ -96,12 +101,20 @@ function FeedbackButtons({ type }: { type: TimelineEventType }) {
 }
 
 function EventRow({ event }: { event: TimelineEvent }) {
+  // A guardrail event reaches this row only when Otari refused the request; a flagged one is a QuietRow.
+  const enforcer = enforcerLabel(event.type);
   return (
     <li data-testid="event" data-type={event.type} className={`rounded px-2 py-1.5 ${event.type === "deny" ? "deny-flash" : ""}`}>
       <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
         <span className="w-12 shrink-0 text-xs tabular-nums text-neutral-500">{formatT(event.t)}</span>
         <span className={`rounded border px-1.5 text-xs font-medium ${badgeClass(event.type)}`}>{event.type}</span>
-        <span className="text-xs text-neutral-500">{SOURCE[event.type]}</span>
+        {enforcer !== null ? (
+          <span data-testid="enforcer" className="rounded border border-neutral-900 px-1.5 text-xs font-semibold">
+            Blocked by {enforcer}
+          </span>
+        ) : (
+          <span className="text-xs text-neutral-500">{SOURCE[event.type]}</span>
+        )}
         {event.cost !== undefined ? <span className="text-xs tabular-nums text-neutral-500">{formatUsd(event.cost)}</span> : null}
         {hasFeedbackControls(event.type) ? <FeedbackButtons type={event.type} /> : null}
       </div>
@@ -111,7 +124,7 @@ function EventRow({ event }: { event: TimelineEvent }) {
   );
 }
 
-export default function Dashboard({ liveProfile: initialProfile }: { liveProfile: LiveProfile }) {
+export default function Dashboard({ liveProfile: initialProfile, comparison }: { liveProfile: LiveProfile; comparison: ComparisonView }) {
   // The profile is read from .env when a run starts, so the line must not go stale after an
   // edit: ask again whenever the window comes back into focus.
   const [liveProfile, setLiveProfile] = useState<LiveProfile>(initialProfile);
@@ -261,13 +274,20 @@ export default function Dashboard({ liveProfile: initialProfile }: { liveProfile
 
   return (
     <main>
-      <header className="flex items-center gap-3 border-b border-neutral-300 pb-3">
-        <img src="/brand/flat-mark/mark-light.svg" alt="" width={36} height={36} />
+      <header className="flex flex-wrap items-center gap-x-3 gap-y-1 border-b border-neutral-300 pb-3">
+        <img src="/brand/favicon/favicon-64-light.svg" alt="" width={40} height={40} />
         <div className="min-w-0">
           <h1 className="text-xl font-bold leading-tight">RogueProof — Scenario 1: Agent Zero</h1>
           <p className="text-sm text-neutral-600">Break your AI agents before the real world does.</p>
         </div>
+        <p data-testid="attribution" className="ml-auto shrink-0 text-right text-xs text-neutral-600">
+          Built on Otari by Mozilla.ai
+        </p>
       </header>
+
+      <Section title="Policy comparison" hint="The three golden runs, side by side: same mission, same attack, a different policy. Blocked actions are the orchestrator's tool policy (app-level); guardrail hits are Otari's inference guardrail.">
+        <PolicyComparison comparison={comparison} />
+      </Section>
 
       <Section title="Defense Control" hint="Same agent, same attack. Pick the policy it runs under.">
         <div role="radiogroup" aria-label="Mode" className="flex flex-wrap gap-2">

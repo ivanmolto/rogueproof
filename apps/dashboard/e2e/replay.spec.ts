@@ -215,3 +215,25 @@ test("Trust Report link opens the report page", async ({ page }) => {
   await expect(page.getByRole("heading", { level: 1 })).toHaveText("Trust Report");
   expect(errors).toEqual([]);
 });
+
+test("Policy comparison: three golden runs side by side, each decision under its enforcer, attribution in the header", async ({ page }) => {
+  const errors = watchConsole(page);
+  await page.goto("/");
+  await expect(page.getByTestId("attribution")).toHaveText("Built on Otari by Mozilla.ai");
+  const table = page.getByTestId("comparison");
+  await expect(table.getByRole("row", { name: /Blocked actions/ })).toContainText("tool policy (orchestrator)");
+  await expect(table.getByRole("row", { name: /Guardrail hits/ })).toContainText("Otari guardrail");
+  for (const run of ["safe", "permissive", "budget"] as const) {
+    const r = JSON.parse(readFileSync(join(GOLDEN, run, "run.json"), "utf8")) as { runId: string; policyDecisions: { decision: string }[]; collector: { drops: number } };
+    await expect(page.getByTestId(`compare-run-${run}`)).toHaveText(r.runId);
+    await expect(page.getByTestId(`compare-blocked-${run}`)).toHaveText(String(r.policyDecisions.filter((d) => d.decision === "deny").length));
+    await expect(page.getByTestId(`compare-leaked-${run}`)).toContainText(String(r.collector.drops));
+  }
+  await expect(table.getByRole("row", { name: /Secrets leaked \(collector drops\)/ })).toBeVisible();
+  // A denial in the timeline names the orchestrator's tool policy, never Otari.
+  await replay(page, "Safe", { skip: true });
+  const deny = page.locator('[data-testid="event"][data-type="deny"]').first();
+  await expect(deny.getByTestId("enforcer")).toHaveText("Blocked by tool policy (orchestrator)");
+  await expect(page.locator('[data-testid="event"][data-type="guardrail"]').first().getByTestId("enforcer")).toContainText("Otari guardrail");
+  expect(errors).toEqual([]);
+});
