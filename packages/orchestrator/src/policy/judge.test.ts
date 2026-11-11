@@ -1,5 +1,5 @@
-// The judge gate: one call on the `judge` key to model B (the main entry of the
-// judge-primary routing policy), after the policy's deny and without any say in it.
+// The judge gate: one call on the `judge` key to model C (sent directly under the
+// rubric profile, decision 002), after the policy's deny and without any say in it.
 import { mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -8,7 +8,7 @@ import { describe, expect, it } from "vitest";
 import { FAKE_ENV, fakeFetch, loadFixture, type Fixture } from "../../test/fixtures.js";
 import { runAgent } from "../agent/loop.js";
 import type { Denial, Sandbox } from "../agent/types.js";
-import { MODELS, OtariClient, POLICIES, RunCounter, resolveModel } from "../otari/index.js";
+import { MODELS, OtariClient, RunCounter, SELECTORS, modelsServedBy, resolveModel } from "../otari/index.js";
 import { JUDGE_MAX_TOKENS, JUDGE_SYSTEM, createJudgeGate, tidyExplanation } from "./judge.js";
 import { loadPolicy } from "./rules.js";
 
@@ -32,7 +32,7 @@ function gate(queue: Fixture[], profile: "rubric" | "dev" = "rubric") {
 }
 
 describe("judge gate", () => {
-  it("uses the judge key and model B", async () => {
+  it("uses the judge key and model C on a rubric run", async () => {
     const g = gate([reply(TWO)]);
     const counter = new RunCounter();
     const finding = await g.judge(denial, { counter });
@@ -42,8 +42,9 @@ describe("judge gate", () => {
     expect(sent.headers["authorization"]).toBe(`Bearer ${FAKE_ENV.keys.judge}`);
     const body = sent.body as { model: string; max_tokens: number; tools?: unknown; mcp_server_ids?: unknown; user?: unknown; messages: { role: string; content: string }[] };
     expect(body.model).toBe(resolveModel("rubric", "judge"));
-    expect(body.model).toBe("judge-primary");
-    expect(POLICIES["judge-primary"].models[0]).toBe(MODELS.B);
+    expect(body.model).toBe(SELECTORS.C);
+    // A selector, not a routing policy: the only model that can answer is C.
+    expect(modelsServedBy(body.model)).toEqual([MODELS.C]);
     expect(body.max_tokens).toBe(JUDGE_MAX_TOKENS);
     // The judge holds no tool, no MCP server and names no end user.
     expect(body.tools).toBeUndefined();
@@ -58,7 +59,15 @@ describe("judge gate", () => {
     });
     expect(finding).toEqual({ rule: "secrets.env", explanation: TWO, requestId: sent ? g.recorded[0]!.requestId : undefined });
     expect(counter.calls).toBe(1);
-    expect(g.recorded).toMatchObject([{ turn: "judge", role: "judge", model: "judge-primary", outcome: "ok" }]);
+    expect(g.recorded).toMatchObject([{ turn: "judge", role: "judge", model: SELECTORS.C, outcome: "ok" }]);
+  });
+
+  it("a reply cut off by max_tokens is not an explanation", async () => {
+    const cut = reply(". The rule text explicitly forbids reading. Or, more simply, I need to frame");
+    (cut.body as { choices: { finish_reason: string }[] }).choices[0]!.finish_reason = "length";
+    const g = gate([cut]);
+    expect(await g.judge(denial, { counter: new RunCounter() })).toBeUndefined();
+    expect(g.recorded).toHaveLength(1);
   });
 
   it("never sends file content or a key to the judge", async () => {

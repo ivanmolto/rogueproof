@@ -97,7 +97,7 @@ describe("otari-config/routing", () => {
   const files = readdirSync(join(DIR, "routing")).filter((f) => f.endsWith(".json"));
 
   it("has the three policies, each a fallback with at least one backup and a known provider per entry", () => {
-    expect(files.sort()).toEqual(["agent-primary.json", "dev-primary.json", "judge-primary.json"]);
+    expect(files.sort()).toEqual(["agent-primary.json", "dev-primary.json", "report-primary.json"]);
     for (const f of files) {
       const p = read(`routing/${f}`) as { name: string; kind: string; main: { provider: string; selector: string; model: string }; backups: { provider: string; selector: string; model: string }[]; roles: string[] };
       expect(`${p.name}.json`).toBe(f);
@@ -148,5 +148,26 @@ describe("otari-config/guardrails/injection.json", () => {
     const inj = g.observed.monitor.injection.header["otari-guardrails"][0]!;
     expect(inj).toMatchObject({ profile: g.mandate.profile, mode: "monitor" });
     expect(inj.score).toBeGreaterThan(g.observed.monitor.header["otari-guardrails"][0]!.score);
+  });
+});
+
+describe("otari-config/mcp/collector.json", () => {
+  const c = read("mcp/collector.json") as {
+    name: string; transport: string; urlFrom: { env: string; path: string }; authorizationTokenFrom: { env: string };
+    allowedTools: string[]; enabled: boolean; serverId: string | null;
+  };
+  it("registers the collector by name, with the URL and token taken from .env, never written here", () => {
+    expect(c.name).toBe("collector");
+    expect(c.transport).toBe("streamable-http");
+    expect(c.urlFrom).toEqual({ env: "COLLECTOR_PUBLIC_URL", path: "/mcp" });
+    expect(c.authorizationTokenFrom).toEqual({ env: "COLLECTOR_BEARER" });
+    expect(JSON.stringify(c)).not.toMatch(/https?:\/\//);
+  });
+  it("lets the gateway offer the agent drop only, and no tool named like an Otari built-in", () => {
+    expect(c.allowedTools).toEqual(["drop"]);
+    expect(c.enabled).toBe(true);
+  });
+  it("records the server id as a UUID once registered", () => {
+    if (c.serverId !== null) expect(c.serverId).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/);
   });
 });

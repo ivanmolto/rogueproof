@@ -86,9 +86,9 @@ and a visible `deny` in the timeline; nothing could leave the container anyway.
 
 ## Judge gate
 
-On each `deny` the orchestrator calls the judge model (model B, through the
-`judge` key and the `judge-primary` routing policy; under `MODEL_PROFILE=dev`
-the same key routes to the dev policy) with the denied call and the rule, asks
+On each `deny` the orchestrator calls the judge model (model C, through the
+`judge` key, sent directly with no routing policy and so no fallback; under
+`MODEL_PROFILE=dev` the same key routes to the dev policy) with the denied call and the rule, asks
 for a two-sentence explanation, emits a `judge` timeline event, and returns
 rule + explanation to the agent as the tool result. The judge is called after
 the verdict and only explains it. If the call fails, is blocked, runs out of

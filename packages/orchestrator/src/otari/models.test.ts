@@ -8,6 +8,7 @@ describe("models mirror otari-config/models.json", () => {
   const root = findRepoRoot(import.meta.dirname)!;
   const cfg = JSON.parse(readFileSync(join(root, "otari-config", "models.json"), "utf8")) as {
     roles: Record<string, { id: string; selectors: string[]; openWeights: boolean }>;
+    profiles: Record<string, Record<string, string | null>>;
   };
 
   it("ids and primary selectors match", () => {
@@ -23,6 +24,13 @@ describe("models mirror otari-config/models.json", () => {
       expect(isOpenWeight(resolveModel("rubric", role))).toBe(true);
       expect(resolveModel("dev", role)).toBe("dev-primary");
     }
+    // Decision 002: the rubric judge is model C sent directly; the report stays on report-primary (B first).
+    expect(resolveModel("rubric", "judge")).toBe(SELECTORS.C);
+    expect(resolveModel("rubric", "report")).toBe("report-primary");
+    expect(modelsServedBy(resolveModel("rubric", "report"))[0]).toBe(MODELS.B);
+    const letter = (role: "agent" | "judge" | "report"): string | undefined =>
+      (["A", "B", "C"] as const).find((l) => MODELS[l] === modelsServedBy(resolveModel("rubric", role))[0]);
+    for (const role of ["agent", "judge", "report"] as const) expect(letter(role)).toBe(cfg.profiles["rubric"]![role]);
     expect(isOpenWeight("dev-primary")).toBe(false);
     expect(isOpenWeight(SELECTORS.D)).toBe(false);
     expect(isOpenWeight(SELECTORS.A)).toBe(true);

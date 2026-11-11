@@ -28,15 +28,22 @@ export const OPEN_WEIGHT_MODELS: readonly string[] = [MODELS.A, MODELS.B, MODELS
  */
 export const POLICIES = {
   "agent-primary": { models: [MODELS.A, MODELS.A, MODELS.C], profile: "rubric" },
-  "judge-primary": { models: [MODELS.B, MODELS.C], profile: "rubric" },
+  "report-primary": { models: [MODELS.B, MODELS.C], profile: "rubric" },
   "dev-primary": { models: [MODELS.D, "anthropic/claude-haiku-5.5"], profile: "dev" },
 } as const;
 export type PolicyName = keyof typeof POLICIES;
 
-const RUBRIC: Record<Role, PolicyName> = {
+/**
+ * What a role sends as `model`: a routing policy, or one selector sent directly.
+ * The rubric judge is model C sent directly, with no routing policy and so no
+ * fallback: model B, first in report-primary, needed 4096 tokens and ~90 s per
+ * explanation (docs/decisions/002-judge-model-c.md). If C is unavailable the
+ * denial stands unexplained. report-primary still serves the report role.
+ */
+const RUBRIC: Record<Role, PolicyName | (typeof SELECTORS)[keyof typeof SELECTORS]> = {
   agent: "agent-primary",
-  judge: "judge-primary",
-  report: "judge-primary",
+  judge: SELECTORS.C,
+  report: "report-primary",
   capped: "agent-primary",
   service: "agent-primary",
 };
@@ -49,8 +56,8 @@ const DEV: Record<Role, PolicyName> = {
   service: "dev-primary",
 };
 
-/** The policy name a role sends as `model` under a profile. */
-export function resolveModel(profile: Profile, role: Role): PolicyName {
+/** The policy name or selector a role sends as `model` under a profile. */
+export function resolveModel(profile: Profile, role: Role): string {
   return profile === "rubric" ? RUBRIC[role] : DEV[role];
 }
 

@@ -1,5 +1,5 @@
 {
-  "$comment": "Model roles. A/B/C are open-weight and the only models a rubric run may use; D is Claude via the own anthropic-dev provider key and never a rubric role. A selector is 'provider:org/model'; a bare 'org/model' goes to the first offering in catalog order (cheapest). The response's model echoes what was sent; billing follows the offering that answered.",
+  "$comment": "Model roles. A/B/C are open-weight and the only models a rubric run may use; D is Claude via the own anthropic-dev provider key and never a rubric role. On rubric runs the judge is C sent as a selector with no routing policy, so it has no fallback (docs/decisions/002-judge-model-c.md); the report is B through report-primary. A selector is 'provider:org/model'; a bare 'org/model' goes to the first offering in catalog order (cheapest). The response's model echoes what was sent; billing follows the offering that answered.",
   "roles": {
     "A": {
       "role": "agent",
@@ -28,7 +28,7 @@
       }
     },
     "B": {
-      "role": "judge, report",
+      "role": "report",
       "id": "alibaba/qwen-3.5-35b-a3b",
       "selectors": [
         "deepinfra:alibaba/qwen-3.5-35b-a3b"
@@ -44,7 +44,7 @@
       }
     },
     "C": {
-      "role": "fallback",
+      "role": "judge, fallback",
       "id": "minimax/minimax-m3.1-flash",
       "selectors": [
         "fireworks:minimax/minimax-m3.1-flash"
@@ -82,7 +82,7 @@
   "profiles": {
     "rubric": {
       "agent": "A",
-      "judge": "B",
+      "judge": "C",
       "report": "B",
       "fallback": "C"
     },

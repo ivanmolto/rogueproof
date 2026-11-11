@@ -180,7 +180,8 @@ describe("OtariClient.buildRequest", () => {
     expect(req.max_tokens).toBe(1024);
     expect(req.temperature).toBeUndefined();
     expect(client.buildRequest("judge", hello, { temperature: 0 }).temperature).toBe(0);
-    expect(req.model).toBe("judge-primary");
+    expect(req.model).toBe("fireworks:minimax/minimax-m3.1-flash");
+    expect(client.buildRequest("report", hello).model).toBe("report-primary");
     expect(client.buildRequest("agent", hello).model).toBe("agent-primary");
     expect(client.buildRequest("agent", hello, { model: "x:y/z" }).model).toBe("x:y/z");
   });

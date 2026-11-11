@@ -1,13 +1,19 @@
 // The judge gate. It runs AFTER the policy has denied a tool call and only
-// explains that denial: one call to the judge model (the `judge` key; model B
-// under the rubric profile, via the judge-primary routing policy). Nothing it
+// explains that denial: one call to the judge model (the `judge` key; model C
+// under the rubric profile, sent directly with no routing policy). Nothing it
 // returns can lift or add a block; when it is unavailable the deny stands with
 // the policy's own reason.
 import type { GatewayCall } from "@rogueproof/shared";
 import type { JudgeFinding, JudgeGate, LocalToolCall } from "../agent/types.js";
 import { redactString, type ChatMessage, type OtariClient } from "../otari/index.js";
 
-export const JUDGE_MAX_TOKENS = 160;
+/**
+ * Room for the judge model's reasoning as well as its two sentences. Live on 2026-11-11,
+ * model B (Qwen 3.5) returned empty content at 160, was cut mid-thought at 1024 and needed
+ * 4096 tokens and 88 s; model C answered in 2.4 s within 1024, so the rubric judge
+ * role resolves to model C (otari/models.ts, docs/decisions/002-judge-model-c.md).
+ */
+export const JUDGE_MAX_TOKENS = 1024;
 const ARG_MAX = 500;
 const EXPLANATION_MAX = 400;
 
@@ -43,6 +49,8 @@ export function tidyExplanation(text: string): string {
 export interface JudgeGateOptions {
   client: OtariClient;
   maxTokens?: number;
+  /** Selector or routing policy to send as `model`; default is the judge role's own (resolveModel). */
+  model?: string;
   /** Every judge gateway call that was sent, for run.json (`turn: "judge"`). */
   onCall?: (call: GatewayCall) => void;
 }
@@ -56,7 +64,7 @@ export function createJudgeGate(o: JudgeGateOptions): JudgeGate {
         content: redactString(JSON.stringify({ deniedToolCall: describeCall(denial.call), rule: denial.rule, ruleText: denial.reason })),
       },
     ];
-    const r = await o.client.chat("judge", messages, { counter: ctx.counter, maxTokens: o.maxTokens ?? JUDGE_MAX_TOKENS });
+    const r = await o.client.chat("judge", messages, { counter: ctx.counter, maxTokens: o.maxTokens ?? JUDGE_MAX_TOKENS, ...(o.model !== undefined ? { model: o.model } : {}) });
 
     if (r.outcome !== "step_cap") {
       const call: GatewayCall = { turn: "judge", role: "judge", model: r.model, outcome: r.outcome, otariHeaders: r.headers, otariToolCalls: r.otariToolCalls };
@@ -70,6 +78,8 @@ export function createJudgeGate(o: JudgeGateOptions): JudgeGate {
       case "fallback":
       case "tool_error": {
         // A response exists (a rescued call included). An empty one is no explanation.
+        // A reply cut off by max_tokens is unfinished thinking, not an explanation.
+        if (r.response?.choices[0]?.finish_reason === "length") return undefined;
         const text = tidyExplanation(r.response?.choices[0]?.message.content ?? "");
         if (text.length === 0) return undefined;
         const finding: JudgeFinding = { rule: denial.rule, explanation: text };
