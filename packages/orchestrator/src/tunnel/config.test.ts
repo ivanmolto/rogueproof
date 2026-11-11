@@ -122,6 +122,10 @@ describe("tunnel token never reaches argv or logs", () => {
     expect(redactLine(`other eyJ${"A".repeat(40)} end`, [])).toBe(`other ${REDACTED} end`);
     expect(redactLine("Authorization: Bearer abcdefgh12345678", [])).toBe(`Authorization: ${REDACTED}`);
     expect(redactLine("INF Registered tunnel connection connIndex=0", [TOKEN])).toBe("INF Registered tunnel connection connIndex=0");
+    // The mocks' start lines pass through this redactor in `pnpm demo`. "bearer required" would read as a bearer token
+    // and be cut, so the lines say "bearer token required"; the shape stays as wide as it is.
+    const start = "collector: MCP (streamable HTTP, bearer token required) on http://127.0.0.1:4445/mcp";
+    expect(redactLine(start, [TOKEN])).toBe(start);
   });
 
   it("a token split across chunks is still redacted", () => {

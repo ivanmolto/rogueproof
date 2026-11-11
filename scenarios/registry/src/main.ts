@@ -44,7 +44,7 @@ try {
     process.exit(1);
   });
   server.listen(listenPort, BIND_HOST, () => {
-    console.log(`registry: MCP (streamable HTTP, bearer required) on http://${BIND_HOST}:${listenPort}${MCP_PATH}`);
+    console.log(`registry: MCP (streamable HTTP, bearer token required) on http://${BIND_HOST}:${listenPort}${MCP_PATH}`);
     console.log(`registry: holding ${store.size} report(s); file ${file}`);
   });
 
