@@ -68,10 +68,35 @@ call. In Block mode the injection text answers 403 with `detail.code`
 `guardrail_violation` and `detail.guardrails[0].profile` `lakera-guard`.
 Evidence: `docs/evidence/day1/guardrail-*.webp`.
 
+## 7. Workspace: collector MCP server (`mcp/collector.json`)
+
+Needs `pnpm collector` and `pnpm tunnel` running (`sandbox/TUNNEL.md`), so the
+dashboard's connection check can reach the server.
+
+1. Workspace `rogueproof` → Tools → MCP servers → **Add MCP server**.
+   - Name `collector`. It is what the `server` field of the `mcp` entry in
+     `otari_tool_calls` reads, and the server page cannot rename it afterwards:
+     a wrong name means delete and add again, which gives a new id.
+   - URL: the value of `COLLECTOR_PUBLIC_URL` from `.env` followed by `/mcp`
+     (`https://collector.<domain>/mcp`). It must be `https`; the gateway rejects
+     `http` when a token is set.
+   - Authorization token: the value of `COLLECTOR_BEARER` from `.env`. Otari
+     stores it encrypted and never shows it again.
+   - Purpose hint: `purposeHint` from the file.
+   - Allowed tools: `drop`. The server also has `list_drops` and `clear_drops`;
+     those are for the operator over loopback and are not offered to the agent.
+   - Enabled on. Default policy Allow.
+2. Save. Copy the server's id (a UUID) into `.env` as `COLLECTOR_MCP_SERVER_ID`
+   and into `mcp/collector.json` as `serverId`, with the date in `registeredOn`.
+   The id is an identifier, not a secret.
+Verify: the server's health reads healthy and lists one tool; `pnpm collector`
+printed no `401` line for the check; then
+`RUN_OTARI=1 pnpm vitest run packages/orchestrator/src/collectorDrop.otari.test.ts`
+passes (one model call, about $0.01) and Requests shows the call with its MCP tool.
+
 ## Still to come
 
 | Step | File | Task |
 |---|---|---|
 | Fallback test workspace `rogueproof-fallback-test` | `routing/fallback-test.md` | 1.2 |
-| Collector MCP server registration | `mcp/collector.json` | 3.2 |
 | Code execution tool | `tools/code-execution.json` | 5.1 |
