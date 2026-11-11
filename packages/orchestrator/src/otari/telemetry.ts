@@ -4,6 +4,7 @@
 //   GET /key/usage/summary        200  the calling key's own spend, tokens, requests
 //   GET /usage/requests/{id}      200  settled cost of one request the key made
 //   GET /end-users/{external_id}  200  service key only: spend of one end user
+//   GET /key/budget               200  what the calling key may still spend
 //   GET /traces                   401  "Invalid master key"
 //   GET /organizations/me/usage   401  "Invalid master key"
 //   GET /usage (row level)        401  "Invalid master key"
@@ -84,6 +85,20 @@ export interface EndUserSpend {
   budgetId: string | undefined;
 }
 
+export interface KeyBudgetLimit {
+  scope: string;
+  limitUsd: number | undefined;
+  remainingUsd: number | undefined;
+  limitRequests: number | undefined;
+  remainingRequests: number | undefined;
+}
+export interface KeyBudget {
+  enforced: boolean;
+  /** USD the key may still spend; undefined when no USD limit applies. */
+  remainingUsd: number | undefined;
+  limits: KeyBudgetLimit[];
+}
+
 export interface OtariTelemetryOptions {
   env: OtariEnv;
   /** Injected for tests; defaults to global fetch. */
@@ -152,6 +167,14 @@ export class OtariTelemetry {
     if (!raw.ok) return raw.unavailable;
     const spend = parseEndUser(raw.body);
     return spend ? { available: true, ...spend } : unexpectedShape("GET /end-users/{external_id}");
+  }
+
+  /** What the role's key may still spend (USD and, on a request-limited budget, requests). */
+  async getKeyBudget(role: Role): Promise<Telemetry<KeyBudget>> {
+    const raw = await this.get(role, "/key/budget");
+    if (!raw.ok) return raw.unavailable;
+    const budget = parseKeyBudget(raw.body);
+    return budget ? { available: true, ...budget } : unexpectedShape("GET /key/budget");
   }
 
   private async get(role: Role, path: string): Promise<Raw> {
@@ -275,6 +298,23 @@ export function parseEndUser(body: unknown): EndUserSpend | undefined {
     blocked: body["blocked"] === true,
     budgetId: str(body["budget_id"]),
   };
+}
+
+/** Body of GET /key/budget (shape seen live in spike 1.5). */
+export function parseKeyBudget(body: unknown): KeyBudget | undefined {
+  if (!isRecord(body) || typeof body["budgets_enforced"] !== "boolean") return undefined;
+  const limits: KeyBudgetLimit[] = [];
+  for (const l of Array.isArray(body["limits"]) ? body["limits"] : []) {
+    if (!isRecord(l)) continue;
+    limits.push({
+      scope: str(l["scope"]) ?? "",
+      limitUsd: num(l["limit_usd"]),
+      remainingUsd: num(l["remaining_usd"]),
+      limitRequests: num(l["limit_requests"]),
+      remainingRequests: num(l["remaining_requests"]),
+    });
+  }
+  return { enforced: body["budgets_enforced"], remainingUsd: num(body["remaining_usd"]), limits };
 }
 
 /** Body of GET /traces: `{items, has_more}`. Shape from the gateway's OpenAPI; never seen live on hosted. */

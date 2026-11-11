@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { FAKE_ENV, fakeFetch, loadTelemetryFixture as fx, type Fixture } from "../../test/fixtures.js";
 import { OtariClient } from "./client.js";
 import { loadDotEnv, readOtariEnv } from "./env.js";
-import { OtariTelemetry, parseEndUser, parseKeyUsage, parseRequestUsage, parseTraceList, reasonFor } from "./telemetry.js";
+import { OtariTelemetry, parseEndUser, parseKeyBudget, parseKeyUsage, parseRequestUsage, parseTraceList, reasonFor } from "./telemetry.js";
 
 const since = new Date("2026-01-01T00:00:00Z");
 const until = new Date("2026-01-01T01:00:00Z");
@@ -126,6 +126,25 @@ describe("getEndUserSpend", () => {
   });
 });
 
+describe("getKeyBudget", () => {
+  it("available: remaining USD and request limits of the role's own key", async () => {
+    const { t, calls } = make([fx("key-budget")]);
+    const r = await t.getKeyBudget("capped");
+    expect(r).toEqual({
+      available: true, enforced: true, remainingUsd: 0.75,
+      limits: [{ scope: "api_token", limitUsd: 1, remainingUsd: 0.75, limitRequests: 4, remainingRequests: 1 }],
+    });
+    expect(calls[0]!.url).toBe("https://fake.gateway.test/api/v1/key/budget");
+    expect(calls[0]!.headers["authorization"]).toBe(`Bearer ${FAKE_ENV.keys.capped}`);
+  });
+
+  it("unavailable on a refusal or an unexpected body", async () => {
+    const { t } = make([fx("master-key-401"), { status: 200, headers: {}, body: { limits: [] } }]);
+    expect(await t.getKeyBudget("agent")).toMatchObject({ available: false, status: 401 });
+    expect(await t.getKeyBudget("agent")).toMatchObject({ available: false, status: 200 });
+  });
+});
+
 describe("failures never throw and never leak a key", () => {
   it("transport failure → available:false with no status", async () => {
     const { t } = make([]);
@@ -169,6 +188,8 @@ describe("parsers are total over arbitrary JSON (fuzz)", () => {
         const e = parseEndUser(body);
         if (e) expect(Number.isFinite(e.spend)).toBe(true);
         parseTraceList(body);
+        const k = parseKeyBudget(body);
+        if (k?.remainingUsd !== undefined) expect(Number.isFinite(k.remainingUsd)).toBe(true);
         expect(typeof reasonFor(400, body)).toBe("string");
       }),
     );

@@ -12,7 +12,9 @@ export type { OtariToolCall, OtariSearchCall, OtariFetchCall, OtariCodeCall, Ota
 export { classifySuccess, classifyError, classifyTransportError } from "./outcome.js";
 export type { Outcome, Classified } from "./outcome.js";
 export { redact, redactString, pickResponseHeaders, REDACTED } from "./redact.js";
-export { OtariTelemetry, parseKeyUsage, parseRequestUsage, parseEndUser, parseTraceList } from "./telemetry.js";
-export type { Telemetry, Unavailable, UsageReport, KeyUsage, UsageTotals, UsageGroup, RequestUsage, TraceSummary, EndUserSpend, OtariTelemetryOptions } from "./telemetry.js";
+export { OtariTelemetry, parseKeyUsage, parseRequestUsage, parseEndUser, parseKeyBudget, parseTraceList } from "./telemetry.js";
+export type { Telemetry, Unavailable, UsageReport, KeyUsage, UsageTotals, UsageGroup, RequestUsage, TraceSummary, EndUserSpend, KeyBudget, KeyBudgetLimit, OtariTelemetryOptions } from "./telemetry.js";
 export { Recorder } from "./records.js";
 export type { GatewayRecord } from "./records.js";
+export { parseGuardrailVerdicts, GUARDRAILS_HEADER } from "./guardrails.js";
+export type { GuardrailVerdict } from "./guardrails.js";
