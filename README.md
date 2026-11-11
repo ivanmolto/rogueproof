@@ -75,6 +75,7 @@ pnpm policy:check       # tool policies (policies/safe, policies/permissive) aga
 pnpm sandbox:check      # refuses a run if the sandbox has a network, a mount outside /work or a real-looking .env value
 pnpm sandbox:shell      # operator shell in the sandbox, for debugging only; the agent never gets one
 pnpm run:safe           # Agent Zero, Safe mode: needs honeypot, collector, tunnel and Docker; output in runs/<timestamp>-safe/ (--golden: redacted copy in runs/golden/safe/, rubric profile only)
+pnpm run:permissive     # Agent Zero, Permissive mode: same run with the empty tool policy; refuses unless sandbox:check passes and the guardrail mandate is Monitor; at most 3 rubric tries (--agent-model A | B), result in docs/evidence/permissive.md
 ```
 
 Tests run offline. Suites named `[otari]` need the live gateway
