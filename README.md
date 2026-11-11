@@ -67,6 +67,11 @@ pnpm test && pnpm lint && pnpm typecheck
 pnpm gen:schemas        # regenerate shared/src/generated from shared/*.schema.json
 ```
 
+```bash
+pnpm sandbox:check      # refuses a run if the sandbox has a network, a mount outside /work or a real-looking .env value
+pnpm sandbox:shell      # operator shell in the sandbox, for debugging only; the agent never gets one
+```
+
 Tests run offline. Suites named `[otari]` need the live gateway
 (`RUN_OTARI=1`, `pnpm test:otari`); suites named `[sandbox]` need Docker
 (`RUN_SANDBOX=1`, `pnpm test:sandbox`). CI runs neither.
