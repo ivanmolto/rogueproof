@@ -9,15 +9,20 @@
 // try, never in the Permissive evidence document. Budget-limited (task 4.2) is the
 // Safe scenario on the `agent-capped` key (role `capped`), run id `budget-run-<n>`:
 // it refuses to start unless that key's budget has a request_limit, and exits 1
-// when anything but the gateway's budget refusal ended it. Never prints a key.
+// when anything but the gateway's budget refusal ended it. `run:safe --fallback-demo`
+// (task 4.5) is the Safe scenario on the fallback-test workspace's key (role
+// `fallback`, a plain key: `safe-run-<n>` is the run's label), after the workspace
+// mirror check in fallbackDemo.ts; its golden copy goes to runs/golden/safe-fallback.
+// Never prints a key.
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { parseArgs } from "node:util";
-import { OtariClient, OtariTelemetry, SELECTORS, findRepoRoot, loadDotEnv, readOtariEnv } from "../otari/index.js";
+import { FALLBACK_ROLE, OtariClient, OtariTelemetry, ROLE_ENV, SELECTORS, findRepoRoot, loadDotEnv, readOtariEnv } from "../otari/index.js";
 import { createJudgeGate, loadPolicy } from "../policy/index.js";
 import { assertSandboxSafe, copyMission, createDockerSandbox, hostSecrets, startSandbox, stopSandbox, type Runner } from "../sandbox/index.js";
 import { COLLECTOR_PORT, REGISTRY_PORT, normalizePrefix, publicOrigin } from "../tunnel/config.js";
 import { COLLECTOR_MCP_PATH, REGISTRY_MCP_PATH, REGISTRY_SURFACE, createMcpCollector } from "./collector.js";
+import { FALLBACK_COLLECTOR_ENV, FALLBACK_GOLDEN_DIR, FALLBACK_REGISTRY_ENV, FALLBACK_WORKSPACE, RESTORE_REMINDER, checkFallbackWorkspace } from "./fallbackDemo.js";
 import { MAX_PERMISSIVE_TRIES, permissiveRow, permissiveStanding, readPermissiveRows, readPermissiveRuns, readVoidedRunIds, renderPermissiveEvidence } from "./permissiveEvidence.js";
 import type { Replacement } from "./record.js";
 import { RunRefused, assertGoldenAllowed, nextRunNumber, runScenario, runStamp, type ScenarioOptions, type ScenarioSandbox } from "./scenario.js";
@@ -107,10 +112,41 @@ export function registryServerId(repoRoot: string, env: NodeJS.ProcessEnv = proc
   return id;
 }
 
+/**
+ * An MCP server's id in the fallback-test workspace: MCP servers are registered per workspace, so the collector
+ * and the registry have other ids there. As for `rogueproof`, the id in .env must be the one recorded in
+ * otari-config/mcp/<name>.json (`otherWorkspaces`), the server whose allow-list is the one tool.
+ */
+export function fallbackServerId(repoRoot: string, name: "collector" | "registry", env: NodeJS.ProcessEnv = process.env): string {
+  const envName = name === "collector" ? FALLBACK_COLLECTOR_ENV : FALLBACK_REGISTRY_ENV;
+  const id = (env[envName] ?? "").trim();
+  if (id === "") throw new RunRefused(`${envName} is not set (register the ${name} in the ${FALLBACK_WORKSPACE} workspace: otari-config/apply.md step 10)`);
+  let recorded: unknown;
+  try {
+    const file = JSON.parse(readFileSync(join(repoRoot, "otari-config", "mcp", `${name}.json`), "utf8")) as { otherWorkspaces?: Record<string, { serverId?: unknown }> };
+    recorded = file.otherWorkspaces?.[FALLBACK_WORKSPACE]?.serverId;
+  } catch {
+    throw new RunRefused(`otari-config/mcp/${name}.json is missing or unreadable`);
+  }
+  if (recorded !== id) throw new RunRefused(`${envName} and otari-config/mcp/${name}.json (otherWorkspaces.${FALLBACK_WORKSPACE}.serverId) name different servers`);
+  return id;
+}
+
+/** The mandate `rogueproof` runs under, as recorded: what the test workspace has to mirror. */
+export function recordedMandate(repoRoot: string): { profile: string; mode: string } {
+  try {
+    const m = (JSON.parse(readFileSync(join(repoRoot, "otari-config", "guardrails", "injection.json"), "utf8")) as { mandate?: { profile?: unknown; mode?: unknown } }).mandate;
+    if (typeof m?.profile === "string" && typeof m.mode === "string") return { profile: m.profile, mode: m.mode };
+  } catch {
+    // Reported below.
+  }
+  throw new RunRefused("otari-config/guardrails/injection.json records no mandate profile and mode; --fallback-demo needs them to compare the test workspace against");
+}
+
 export async function runCli(mode: CliMode, argv: string[] = process.argv.slice(2)): Promise<number> {
   const { values } = parseArgs({
     args: argv,
-    options: { golden: { type: "boolean", default: false }, n: { type: "string" }, "agent-model": { type: "string" }, "extra-try": { type: "boolean", default: false } },
+    options: { golden: { type: "boolean", default: false }, n: { type: "string" }, "agent-model": { type: "string" }, "extra-try": { type: "boolean", default: false }, "fallback-demo": { type: "boolean", default: false } },
   });
   const repoRoot = findRepoRoot(process.cwd());
   if (repoRoot === undefined) throw new Error("run this from inside the rogueproof repository");
@@ -130,6 +166,16 @@ export async function runCli(mode: CliMode, argv: string[] = process.argv.slice(
   }
   const agentModel = pick === undefined ? undefined : SELECTORS[pick as "A" | "B" | "C"];
 
+  const fallbackDemo = values["fallback-demo"];
+  if (fallbackDemo) {
+    if (mode !== "safe") throw new RunRefused("--fallback-demo is a run:safe flag");
+    // The test workspace holds one routing policy, agent-primary (open-weight models only), and the invalid key is Together's.
+    if (env.profile !== "rubric") throw new RunRefused(`--fallback-demo needs MODEL_PROFILE=rubric; the profile is "${env.profile}"`);
+    // A selector sent directly has no routing policy and so no backup to fall back to.
+    if (pick !== undefined) throw new RunRefused("--fallback-demo sends the agent-primary routing policy; it takes no --agent-model");
+    if (!env.keys[FALLBACK_ROLE]) throw new RunRefused(`${ROLE_ENV[FALLBACK_ROLE]} is not set (the ${FALLBACK_WORKSPACE} workspace key, otari-config/keys.json)`);
+  }
+
   const honeypotOrigin = publicOrigin(process.env["HONEYPOT_PUBLIC_URL"], "HONEYPOT_PUBLIC_URL");
   const prefix = normalizePrefix(process.env["HONEYPOT_PREFIX"]);
   const honeypotUrl = `${honeypotOrigin}${prefix}/`;
@@ -142,6 +188,9 @@ export async function runCli(mode: CliMode, argv: string[] = process.argv.slice(
   const registryId = registryServerId(repoRoot);
   if (registryId === collectorId) throw new RunRefused("REGISTRY_MCP_SERVER_ID and COLLECTOR_MCP_SERVER_ID name the same server");
   const registryOrigin = (process.env["REGISTRY_PUBLIC_URL"] ?? "").trim().replace(/\/+$/, "");
+  const mcpServerIds = fallbackDemo ? [fallbackServerId(repoRoot, "collector"), fallbackServerId(repoRoot, "registry")] : [collectorId, registryId];
+  if (mcpServerIds[0] === mcpServerIds[1]) throw new RunRefused(`${FALLBACK_COLLECTOR_ENV} and ${FALLBACK_REGISTRY_ENV} name the same server`);
+  const mandate = fallbackDemo ? recordedMandate(repoRoot) : undefined;
 
   const runsDir = join(repoRoot, "runs");
   // Control is the Permissive scenario: same mandate mode, same empty tool policy. It is not a rubric try.
@@ -166,12 +215,29 @@ export async function runCli(mode: CliMode, argv: string[] = process.argv.slice(
       golden: values.golden,
       runDir,
       runId,
-      goldenDir: join(runsDir, "golden", mode),
+      goldenDir: join(runsDir, "golden", fallbackDemo ? FALLBACK_GOLDEN_DIR : mode),
       endUser: `${mode}-run-${n}`,
       // agent-capped is a plain key: it names no end user, so `budget-run-<n>` is the run's label only.
-      role: mode === "budget" ? "capped" : "service",
+      // So is fallback-test (the key of the fallback-test workspace).
+      role: mode === "budget" ? "capped" : fallbackDemo ? FALLBACK_ROLE : "service",
       honeypotUrl,
-      mcpServerIds: [collectorId, registryId],
+      mcpServerIds,
+      ...(mandate !== undefined
+        ? {
+            fallbackDemo: true,
+            // Its own client: the probes are not the run's calls and stay out of run.json and records.jsonl.
+            preflight: async (log) => {
+              const check = await checkFallbackWorkspace({
+                client: new OtariClient({ env, recordFile: join(runDir, "preflight.records.jsonl") }),
+                mcpServerIds,
+                guardrail: mandate,
+              });
+              for (const f of check.findings) log.info(`mirror check (${FALLBACK_WORKSPACE}) · ${f.ok ? "yes" : "NO "} · ${f.check} · ${f.detail}`);
+              log.info(`mirror check: ${check.calls} gateway call(s), $${check.costUsd.toFixed(6)}, on the fallback-test key (not part of the run's calls)`);
+              if (!check.ok) throw new RunRefused(`${FALLBACK_WORKSPACE} does not mirror rogueproof (otari-config/apply.md step 10): ${check.findings.filter((f) => !f.ok).map((f) => f.check).join(" · ")}`);
+            },
+          }
+        : {}),
       ...(agentModel !== undefined ? { agentModel } : {}),
       policy: loadPolicy(join(repoRoot, "policies", permissiveLike ? "permissive" : "safe")),
       client,
@@ -196,12 +262,23 @@ export async function runCli(mode: CliMode, argv: string[] = process.argv.slice(
   } finally {
     // Also after a run that ended without a run.json: the file lists what is saved.
     if (mode === "permissive" && existsSync(join(repoRoot, "docs"))) console.log(`evidence: ${writePermissiveEvidence(repoRoot, runsDir)}`);
+    // Also after a refused or failed run: the invalid key may be pinned whatever happened next.
+    if (fallbackDemo) console.log(`\n${RESTORE_REMINDER.join("\n")}\n`);
   }
 
   const r = result.record;
   console.log(`\nrun:${mode} · outcome ${r.outcome} · ${r.modelCalls} model calls · cost $${(r.usage?.costUsd ?? 0).toFixed(6)} · collector drops ${r.collector?.drops ?? "?"}`);
   console.log(`registry (benign MCP tool): ${r.registry?.submitCalls ?? 0} submit_report call(s) in otari_tool_calls, ${r.registry?.submissions ?? "?"} report(s) in list_reports`);
   if ((r.registry?.fakeSecrets?.length ?? 0) > 0) console.log(`FAKE SECRETS IN THE REGISTRY: ${r.registry!.fakeSecrets!.join(", ")} left through submit_report, not through drop`);
+  if (fallbackDemo) {
+    const rescued = r.calls?.filter((c) => c.otariHeaders?.["otari-fallback"] === "true") ?? [];
+    console.log(
+      rescued.length > 0
+        ? `RESCUED BY FALLBACK: ${rescued.length} call(s) with Otari-Fallback: true · first request ${rescued[0]!.requestId ?? "?"} served by ${rescued[0]!.otariHeaders?.["otari-provider"] ?? "?"} (${r.models.fallback ?? "?"})`
+        : "NO fallback in this run: no call carries Otari-Fallback: true",
+    );
+    for (const [name, ok] of Object.entries(result.evidence)) if (!ok) console.log(`evidence NOT met: ${name}`);
+  }
   if (mode === "budget") {
     const stop = r.budgetStop;
     console.log(

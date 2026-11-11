@@ -115,7 +115,7 @@ export function replayRun(record: RunRecord, logText: string): ReplayResult {
   const problems: string[] = [];
   const calls = record.calls ?? [];
   // The capped key is a plain key and names no end user (decision 004): the run's label is not an end user.
-  const endUser = calls.some((c) => c.role === "agent-capped") ? undefined : record.endUser;
+  const endUser = calls.some((c) => c.role === "agent-capped" || c.role === "fallback-test") ? undefined : record.endUser;
   const policyName = record.mode === "permissive" || record.mode === "control" ? "permissive" : "safe";
 
   // What run.json backs, per source.

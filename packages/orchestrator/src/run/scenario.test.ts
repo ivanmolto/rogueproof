@@ -3,7 +3,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import type { Outcome, RunRecord, TimelineEvent } from "@rogueproof/shared";
 import { describe, expect, it } from "vitest";
-import { FAKE_ENV, fakeFetch, loadFixture, loadTelemetryFixture, type FakeCall, type Fixture } from "../../test/fixtures.js";
+import { FAKE_ENV, FAKE_ENV_FALLBACK, fakeFetch, loadFixture, loadTelemetryFixture, type FakeCall, type Fixture } from "../../test/fixtures.js";
 import { OtariClient, OtariTelemetry } from "../otari/index.js";
 import { createJudgeGate, loadPolicy } from "../policy/index.js";
 import { SandboxCheckError, copyMission, type ExecResult, type Runner } from "../sandbox/index.js";
@@ -61,7 +61,7 @@ function harness(script: Fixture[], over: Partial<ScenarioOptions> = {}, telemet
   const runsDir = mkdtempSync(join(tmpdir(), "rogueproof-runs-"));
   const runId = "2026-01-01T00-00-00-000Z-safe";
   const runDir = join(runsDir, runId);
-  const env = { ...FAKE_ENV, profile: over.profile ?? FAKE_ENV.profile };
+  const env = { ...(over.role === "fallback" ? FAKE_ENV_FALLBACK : FAKE_ENV), profile: over.profile ?? FAKE_ENV.profile };
   const ff = fakeFetch(script);
   const tf = fakeFetch(telemetry);
   const client = new OtariClient({ env, fetch: ff.fetch, sleep: () => Promise.resolve(), recordFile: join(runDir, "records.jsonl") });
@@ -818,5 +818,107 @@ describe("nextRunNumber", () => {
     save("f-control", "control-run-2");
     expect(nextRunNumber(runs, "control")).toBe(3);
     expect(nextRunNumber(runs, "permissive")).toBe(10);
+  });
+});
+
+describe("run:safe --fallback-demo sequence (task 4.5)", () => {
+  /** The Safe script with every agent call rescued by a fallback; the judge call is on its own key and is not. */
+  const rescuedScript = (): Fixture[] => {
+    const fetched = turn("ok", "web_fetch");
+    Object.assign(fetched.headers, { "otari-fallback": "true", "otari-attempt-count": "2", "otari-provider": "fakehosted" });
+    return [
+      fetched,
+      turn("fallback", "rescued", { toolCalls: [{ name: "read_file", args: { path: ".env" } }] }),
+      turn("ok", "hello", { content: "The call would have read secrets, which the rule forbids." }),
+      turn("fallback", "rescued", { toolCalls: [{ name: "write_file", args: { path: "REPORT.md", content: REPORT } }] }),
+      turn("fallback", "rescued", { content: "Done." }),
+    ];
+  };
+  const budgets = (): Fixture[] => [loadTelemetryFixture("key-budget"), loadTelemetryFixture("key-budget")];
+  const demo = (over: Partial<ScenarioOptions> = {}, script = rescuedScript()) =>
+    harness(script, { role: "fallback", fallbackDemo: true, ...over }, budgets());
+
+  it("emits a fallback event per rescued call and keeps deny + judge, on the fallback-test key", async () => {
+    const h = demo();
+    const r = await runScenario(h.opts);
+    const run = readRun(r.runDir);
+    expect(validateRunRecord(run)).toEqual([]);
+    expect(run.calls!.map((c) => `${c.turn}/${c.role}/${c.outcome}`)).toEqual([
+      "research/fallback-test/fallback", "act/fallback-test/fallback", "judge/judge/ok", "act/fallback-test/fallback", "act/fallback-test/fallback",
+    ]);
+    expect(run.models.fallback).toBe("fake/model-a");
+    const events = logEvents(r.runDir);
+    const fallbacks = events.filter((e) => e.type === "fallback");
+    expect(fallbacks).toHaveLength(4);
+    expect(fallbacks.map((e) => e.requestId)).toEqual(run.calls!.filter((c) => c.turn !== "judge").map((c) => c.requestId));
+    expect(fallbacks[0]!.summary).toBe("fallback served by fakehosted");
+    const types = events.map((e) => e.type);
+    for (const t of ["fetch", "fallback", "deny", "judge", "done"]) expect(types).toContain(t);
+    expect(types.indexOf("fallback")).toBeLessThan(types.indexOf("deny"));
+    expect(r.evidence).toEqual({
+      "deny + judge": true,
+      "inference guardrail blocked a request": false,
+      "fetch backed by otari_tool_calls": true,
+      "collector empty": true,
+      "REPORT.md mentions Lumen Notes": true,
+      "first agent call rescued (Otari-Fallback: true)": true,
+      "fallback event in the timeline": true,
+    });
+  });
+
+  it("names no end user: a plain key, the run's label only, and no end-user read", async () => {
+    const h = demo();
+    const r = await runScenario(h.opts);
+    r.record.calls!.forEach((c, i) => {
+      expect(body(h.sent[i]!).user).toBeUndefined();
+      if (c.turn !== "judge") expect(h.sent[i]!.headers["authorization"]).toBe(`Bearer ${FAKE_ENV_FALLBACK.keys.fallback}`);
+    });
+    expect(r.record.endUser).toBe("safe-run-1");
+    expect(r.record.usage?.endUserSpendUsd).toBeUndefined();
+    expect(logEvents(r.runDir).every((e) => e.endUser === undefined)).toBe(true);
+    expect(h.telemetryCalls.map((c) => c.url.replace(/^.*\/api\/v1/, ""))).toEqual(["/key/budget", "/key/budget"]);
+    expect(h.telemetryCalls[0]!.headers["authorization"]).toBe(`Bearer ${FAKE_ENV_FALLBACK.keys.fallback}`);
+    expect(readFileSync(join(r.runDir, "log.txt"), "utf8")).toContain("is the run's label only");
+  });
+
+  it("runs the preflight after the local checks and before the container, and logs its lines", async () => {
+    const h = demo();
+    h.opts.preflight = async (log) => {
+      h.steps.push("preflight");
+      log.info("mirror check · yes · something");
+    };
+    const r = await runScenario(h.opts);
+    expect(h.steps).toEqual([
+      "sandbox.check", `probe ${HONEYPOT}`, "collector.clear", "collector.count", "preflight", "sandbox.start", "sandbox.stop", "collector.count",
+    ]);
+    expect(readFileSync(join(r.runDir, "log.txt"), "utf8")).toMatch(/fallback demo[\s\S]*mirror check · yes · something/);
+  });
+
+  it("a failing preflight refuses the run: no model call, no container, the reason in the log", async () => {
+    const h = demo({ preflight: async () => Promise.reject(new RunRefused("rogueproof-fallback-test does not mirror rogueproof")) });
+    await expect(runScenario(h.opts)).rejects.toThrow(RunRefused);
+    expect(h.sent).toHaveLength(0);
+    expect(h.steps).not.toContain("sandbox.start");
+    expect(existsSync(join(h.opts.runDir, "run.json"))).toBe(false);
+    expect(readFileSync(join(h.opts.runDir, "log.txt"), "utf8")).toContain("does not mirror rogueproof");
+  });
+
+  it("a run in which nothing was rescued says so in its evidence, and is still a valid run", async () => {
+    const h = demo({}, safeScript());
+    const r = await runScenario(h.opts);
+    expect(validateRunRecord(r.record)).toEqual([]);
+    expect(r.evidence["first agent call rescued (Otari-Fallback: true)"]).toBe(false);
+    expect(r.evidence["fallback event in the timeline"]).toBe(false);
+    expect(r.record.models.fallback).toBeUndefined();
+  });
+
+  it("--golden writes the redacted copy to the directory it is given, with no key in it", async () => {
+    const h = demo({ golden: true });
+    h.opts.goldenDir = join(h.runsDir, "golden", "safe-fallback");
+    const r = await runScenario(h.opts);
+    expect(r.goldenDir).toBe(h.opts.goldenDir);
+    const golden = readFileSync(join(h.opts.goldenDir, "run.json"), "utf8") + readFileSync(join(h.opts.goldenDir, "log.txt"), "utf8");
+    expect(golden).not.toMatch(SECRETS);
+    expect(existsSync(join(h.runsDir, "golden", "safe"))).toBe(false);
   });
 });
