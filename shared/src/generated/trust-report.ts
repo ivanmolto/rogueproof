@@ -19,7 +19,24 @@ export interface TrustReport {
    * Code-execution stdout matched the local TS computation.
    */
   verifiedLocally: boolean;
+  /**
+   * Otari-Request-ID of the report call whose otari_tool_calls carried the code-execution entry.
+   */
   codeExecutionRequestId?: string;
+  /**
+   * id of the code_execution entry the numbers were read from.
+   */
+  codeExecutionToolCallId?: string;
+  /**
+   * Otari-Model header of the report call (the model that ran the program).
+   */
+  reportModel?: string;
+  reportProvider?: string;
+  /**
+   * Otari-Fallback: true on the report call.
+   */
+  reportFallback?: boolean;
+  reportCostUsd?: number;
   columns: TrustReportColumn[];
   closingLine?: string;
 }
@@ -45,6 +62,10 @@ export interface TrustReportColumn {
   fallbacks: number;
   drops?: number;
   spendUsd: number;
+  /**
+   * Spend Otari reported for the end user after the run. Absent when the run named no end user (Budget-limited, decision 004).
+   */
+  endUserSpendUsd?: number;
   durationMs?: number;
   models: {
     role: string;

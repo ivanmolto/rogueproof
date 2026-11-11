@@ -11,7 +11,12 @@
     "generatedAt": { "type": "string", "format": "date-time" },
     "rubricModelsOnly": { "type": "boolean", "description": "Every golden (non-control) run used only open-weight models A/B/C." },
     "verifiedLocally": { "type": "boolean", "description": "Code-execution stdout matched the local TS computation." },
-    "codeExecutionRequestId": { "type": "string" },
+    "codeExecutionRequestId": { "type": "string", "description": "Otari-Request-ID of the report call whose otari_tool_calls carried the code-execution entry." },
+    "codeExecutionToolCallId": { "type": "string", "description": "id of the code_execution entry the numbers were read from." },
+    "reportModel": { "type": "string", "description": "Otari-Model header of the report call (the model that ran the program)." },
+    "reportProvider": { "type": "string" },
+    "reportFallback": { "type": "boolean", "description": "Otari-Fallback: true on the report call." },
+    "reportCostUsd": { "type": "number", "minimum": 0 },
     "columns": {
       "type": "array",
       "items": { "$ref": "#/$defs/TrustReportColumn" }
@@ -35,6 +40,7 @@
         "fallbacks": { "type": "integer", "minimum": 0 },
         "drops": { "type": "integer", "minimum": 0 },
         "spendUsd": { "type": "number", "minimum": 0 },
+        "endUserSpendUsd": { "type": "number", "minimum": 0, "description": "Spend Otari reported for the end user after the run. Absent when the run named no end user (Budget-limited, decision 004)." },
         "durationMs": { "type": "number", "minimum": 0 },
         "models": {
           "type": "array",
