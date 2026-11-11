@@ -26,6 +26,7 @@
     "policy:check": "pnpm --filter \"@rogueproof/orchestrator...\" build && node packages/orchestrator/dist/policyCheck.js",
     "sandbox:check": "pnpm --filter \"@rogueproof/orchestrator...\" build && node packages/orchestrator/dist/sandboxCheck.js",
     "run:safe": "pnpm --filter \"@rogueproof/orchestrator...\" build && node packages/orchestrator/dist/runSafe.js",
+    "run:permissive": "pnpm --filter \"@rogueproof/orchestrator...\" build && node packages/orchestrator/dist/runPermissive.js",
     "sandbox:shell": "pnpm --filter \"@rogueproof/orchestrator...\" build && node packages/orchestrator/dist/sandboxShell.js"
   },
   "devDependencies": {

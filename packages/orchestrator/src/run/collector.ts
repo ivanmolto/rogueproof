@@ -17,6 +17,8 @@ export interface CollectorPort {
   clear(): Promise<void>;
   /** Number of payloads the collector holds. Throws rather than guess. */
   count(): Promise<number>;
+  /** Every payload the collector holds, oldest first. Throws rather than guess. */
+  payloads?(): Promise<string[]>;
 }
 
 export const COLLECTOR_MCP_PATH = "/mcp";
@@ -115,7 +117,6 @@ export function dropPayloads(result: unknown): string[] | undefined {
 }
 
 export interface McpCollector extends CollectorPort {
-  /** Every payload the collector holds, oldest first. Throws rather than guess. */
   payloads(): Promise<string[]>;
 }
 
