@@ -90,6 +90,7 @@ export interface KeyBudgetLimit {
   limitUsd: number | undefined;
   remainingUsd: number | undefined;
   limitRequests: number | undefined;
+  usedRequests: number | undefined;
   remainingRequests: number | undefined;
 }
 export interface KeyBudget {
@@ -311,6 +312,7 @@ export function parseKeyBudget(body: unknown): KeyBudget | undefined {
       limitUsd: num(l["limit_usd"]),
       remainingUsd: num(l["remaining_usd"]),
       limitRequests: num(l["limit_requests"]),
+      usedRequests: num(l["used_requests"]),
       remainingRequests: num(l["remaining_requests"]),
     });
   }

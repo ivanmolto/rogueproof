@@ -132,7 +132,7 @@ describe("getKeyBudget", () => {
     const r = await t.getKeyBudget("capped");
     expect(r).toEqual({
       available: true, enforced: true, remainingUsd: 0.75,
-      limits: [{ scope: "api_token", limitUsd: 1, remainingUsd: 0.75, limitRequests: 4, remainingRequests: 1 }],
+      limits: [{ scope: "api_token", limitUsd: 1, remainingUsd: 0.75, limitRequests: 4, usedRequests: 3, remainingRequests: 1 }],
     });
     expect(calls[0]!.url).toBe("https://fake.gateway.test/api/v1/key/budget");
     expect(calls[0]!.headers["authorization"]).toBe(`Bearer ${FAKE_ENV.keys.capped}`);

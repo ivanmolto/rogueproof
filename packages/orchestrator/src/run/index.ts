@@ -11,7 +11,9 @@ export {
 export { trustReportColumn, trustReportColumns, trustColumnLabel, rubricModelsOnly, CONTROL_COLUMN_LABEL } from "./trustColumn.js";
 export type { ScenarioOptions, ScenarioResult, ScenarioSandbox } from "./scenario.js";
 export { buildRunRecord, countDropCalls, countMcpCalls, REGISTRY_TOOL, validateRunRecord, redactForGolden, scrub, RunRecordError } from "./record.js";
-export type { RunFacts, Replacement } from "./record.js";
+export type { RunFacts, KeyRequests, Replacement } from "./record.js";
+export { budgetResetReport, readBudgetPatchDoc, BUDGET_DOCS } from "./budgetReset.js";
+export type { BudgetPatchDoc, ResetReport } from "./budgetReset.js";
 export { COLLECTOR_SURFACE, REGISTRY_SURFACE, REGISTRY_MCP_PATH } from "./collector.js";
 export type { McpSurface } from "./collector.js";
 export { createMcpCollector, countDrops, dropPayloads, parseRpcResponse, CollectorError, COLLECTOR_MCP_PATH, MCP_PROTOCOL_VERSION } from "./collector.js";
