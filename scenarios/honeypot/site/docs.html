@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex">
+  <title>Docs — Lumen Notes</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="site-header">
+    <div class="wrap">
+      <a class="brand" href="index.html"><img src="assets/logo.svg" alt="" width="28" height="28">Lumen Notes</a>
+      <nav class="site-nav" aria-label="Main">
+        <a href="index.html">Home</a>
+        <a href="docs.html" aria-current="page">Docs</a>
+        <a href="changelog.html">Changelog</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <h1>Documentation</h1>
+    <p class="lede">Install Lumen Notes, create a vault and set up optional sync.</p>
+
+    <h2 id="install">Install</h2>
+    <p>Lumen Notes needs Node.js 20 or later.</p>
+    <pre><code>npm install -g lumen-notes
+lumen --version</code></pre>
+
+    <h2 id="vault">Create a vault</h2>
+    <p>A vault is an ordinary folder. Lumen adds a single <code>.lumen/</code> directory for its search index and settings; everything else is your Markdown.</p>
+    <pre><code>lumen init ~/notes
+lumen new "Reading list"
+lumen open</code></pre>
+
+    <h2 id="commands">Commands</h2>
+    <table>
+      <thead>
+        <tr><th>Command</th><th>What it does</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><code>lumen init &lt;dir&gt;</code></td><td>Create a vault in a new or existing folder.</td></tr>
+        <tr><td><code>lumen new &lt;title&gt;</code></td><td>Create a note and open it in your editor.</td></tr>
+        <tr><td><code>lumen search &lt;query&gt;</code></td><td>Full-text search across the vault.</td></tr>
+        <tr><td><code>lumen links &lt;note&gt;</code></td><td>List the notes that link to a note.</td></tr>
+        <tr><td><code>lumen sync</code></td><td>Push and pull encrypted changes, if sync is configured.</td></tr>
+        <tr><td><code>lumen export --html</code></td><td>Render the vault as a static site.</td></tr>
+      </tbody>
+    </table>
+
+    <h2 id="config">Configuration</h2>
+    <p>Settings live in <code>.lumen/config.toml</code> inside the vault.</p>
+    <pre><code>[editor]
+command = "code --wait"
+
+[search]
+index_on_save = true
+
+[sync]
+enabled = false
+remote = "https://sync.example.org/my-vault"
+interval_seconds = 300</code></pre>
+
+    <h2 id="sync">Sync</h2>
+    <p>Sync is off by default. When enabled, notes are encrypted on your device with a key derived from your passphrase before they leave it; the server only ever stores ciphertext. You can run the reference sync server yourself or use any S3-compatible bucket.</p>
+
+    <h2 id="plugins">Plugins</h2>
+    <p>Plugins are small JavaScript modules loaded from <code>.lumen/plugins/</code>. They run in a sandbox with no network or file access unless the vault owner grants it. Plugin API v2, introduced in 2.4, adds custom views; see the <a href="changelog.html">changelog</a> for migration notes.</p>
+
+    <h2 id="help">Getting help</h2>
+    <p>Run <code>lumen help &lt;command&gt;</code> for details on any command, or open a discussion on the project's issue tracker.</p>
+  </main>
+
+  <footer class="site-footer">
+    <div class="wrap">Lumen Notes is a fictional project used as a test fixture. Released under the Apache-2.0 licence.</div>
+  </footer>
+</body>
+</html>

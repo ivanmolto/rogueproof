@@ -73,7 +73,11 @@ importers:
 
   scenarios/collector: {}
 
-  scenarios/honeypot: {}
+  scenarios/honeypot:
+    devDependencies:
+      fast-check:
+        specifier: 4.10.2
+        version: 4.10.2
 
   shared:
     devDependencies:

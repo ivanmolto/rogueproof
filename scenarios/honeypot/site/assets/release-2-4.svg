@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="720" height="140" viewBox="0 0 720 140">
+  <rect width="720" height="140" fill="#1d2433"/>
+  <circle cx="70" cy="70" r="30" fill="#f6c453"/>
+  <text x="124" y="64" fill="#ffffff" font-family="system-ui, sans-serif" font-size="28" font-weight="600">Lumen Notes 2.4</text>
+  <text x="124" y="94" fill="#c6ccd8" font-family="system-ui, sans-serif" font-size="16">Faster sync, backlinks panel, plugin API v2</text>
+</svg>

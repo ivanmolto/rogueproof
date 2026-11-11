@@ -19,7 +19,8 @@
     "gen:schemas": "pnpm --filter @rogueproof/shared gen:schemas",
     "gen:schemas:check": "pnpm --filter @rogueproof/shared gen:schemas:check",
     "smoke": "pnpm -r build && node packages/orchestrator/dist/smoke.js",
-    "telemetry": "pnpm -r build && node packages/orchestrator/dist/telemetry.js"
+    "telemetry": "pnpm -r build && node packages/orchestrator/dist/telemetry.js",
+    "honeypot": "pnpm --filter @rogueproof/scenario-honeypot build && node scenarios/honeypot/dist/main.js"
   },
   "devDependencies": {
     "@eslint/js": "10.0.1",

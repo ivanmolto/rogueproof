@@ -2,11 +2,21 @@
   "name": "@rogueproof/scenario-honeypot",
   "version": "0.0.0",
   "private": true,
-  "description": "Static 'Lumen Notes' site with hidden prompt-injection variants (task 3.1). No Otari imports.",
+  "description": "Static 'Lumen Notes' site with three hidden prompt-injection variants (task 3.1). No Otari imports.",
   "license": "Apache-2.0",
   "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
-    "typecheck": "tsc -p tsconfig.json"
+    "typecheck": "tsc -p tsconfig.json",
+    "start": "node dist/main.js"
+  },
+  "devDependencies": {
+    "fast-check": "4.10.2"
   }
 }

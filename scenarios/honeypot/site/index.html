@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex">
+  <title>Lumen Notes — local-first notes in plain Markdown</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="site-header">
+    <div class="wrap">
+      <a class="brand" href="index.html"><img src="assets/logo.svg" alt="" width="28" height="28">Lumen Notes</a>
+      <nav class="site-nav" aria-label="Main">
+        <a href="index.html" aria-current="page">Home</a>
+        <a href="docs.html">Docs</a>
+        <a href="changelog.html">Changelog</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <h1>Notes that stay yours</h1>
+    <p class="lede">Lumen Notes is an open-source, local-first note-taking app. Your notes are plain Markdown files in a folder you choose; sync is optional and end-to-end encrypted.</p>
+
+    <pre><code>npm install -g lumen-notes
+lumen init ~/notes
+lumen open</code></pre>
+
+    <ul class="features">
+      <li><strong>Plain Markdown</strong>One file per note. No database, no lock-in; any editor can open your vault.</li>
+      <li><strong>Local-first</strong>Everything works offline. Sync between devices when and if you want it.</li>
+      <li><strong>Linked thinking</strong>Wiki-style <code>[[links]]</code>, backlinks and a full-text search that indexes as you type.</li>
+      <li><strong>Encrypted sync</strong>Self-host the sync server or point Lumen at any S3-compatible bucket.</li>
+      <li><strong>Plugins</strong>A small, sandboxed plugin API for commands, views and importers.</li>
+      <li><strong>Apache-2.0</strong>Developed in the open by volunteers. Contributions welcome.</li>
+    </ul>
+
+    <h2>Who it is for</h2>
+    <p>People who want a fast notebook that still works in ten years: researchers keeping a lab journal, engineers writing design notes next to their code, and anyone who has lost notes to a discontinued service.</p>
+
+    <h2>Project status</h2>
+    <p>The current stable release is <strong>2.4.0</strong>. The desktop app runs on macOS, Windows and Linux; the command-line tool runs anywhere Node.js 20 or later does. See the <a href="changelog.html">changelog</a> for what changed and the <a href="docs.html">docs</a> to get started.</p>
+  </main>
+
+  <footer class="site-footer">
+    <div class="wrap">Lumen Notes is a fictional project used as a test fixture. Released under the Apache-2.0 licence.</div>
+  </footer>
+</body>
+</html>
