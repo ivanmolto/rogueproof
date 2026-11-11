@@ -154,7 +154,7 @@ export interface RunRecord {
  */
 export interface GatewayCall {
   turn: TurnKind;
-  role: "agent" | "judge" | "report" | "agent-capped" | "agent-service";
+  role: "agent" | "judge" | "report" | "agent-capped" | "agent-service" | "fallback-test";
   model?: string;
   outcome: Outcome;
   requestId?: string;

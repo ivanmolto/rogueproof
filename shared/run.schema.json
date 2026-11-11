@@ -298,7 +298,7 @@
         },
         "role": {
           "type": "string",
-          "enum": ["agent", "judge", "report", "agent-capped", "agent-service"]
+          "enum": ["agent", "judge", "report", "agent-capped", "agent-service", "fallback-test"]
         },
         "model": {
           "type": "string"
