@@ -93,6 +93,7 @@ export async function runAgent(o: RunAgentOptions): Promise<AgentRun> {
       counter,
       ...(set.mcpServerIds ? { mcpServerIds: set.mcpServerIds } : {}),
       ...(o.endUser !== undefined ? { endUser: o.endUser } : {}),
+      ...(o.model !== undefined ? { model: o.model } : {}),
       ...(o.maxTokens !== undefined ? { maxTokens: o.maxTokens } : {}),
       ...(o.temperature !== undefined ? { temperature: o.temperature } : {}),
     });
@@ -105,6 +106,7 @@ export async function runAgent(o: RunAgentOptions): Promise<AgentRun> {
       if (r.requestId !== undefined) call.requestId = r.requestId;
       if (r.cost !== undefined) call.costUsd = r.cost;
       calls.push(call);
+      o.onCall?.(call);
       costUsd += r.cost ?? 0;
     }
 

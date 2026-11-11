@@ -65,11 +65,15 @@ export interface RunAgentOptions {
   endUser?: string;
   /** Stored MCP server ids (the collector). Attached to act turns only. */
   mcpServerIds?: readonly string[];
+  /** Selector to send as `model` on agent calls instead of the role's routing policy. */
+  model?: string;
   judge?: JudgeGate;
   counter?: RunCounter;
   maxTokens?: number;
   temperature?: number;
   onEvent?: (e: TimelineEvent) => void;
+  /** Every agent gateway call that was sent, as it returns (the same objects as `AgentRun.calls`). */
+  onCall?: (c: GatewayCall) => void;
   /** Milliseconds clock, injectable for tests. */
   now?: () => number;
 }

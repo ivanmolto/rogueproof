@@ -25,6 +25,12 @@ export const LOCAL_TOOLS: readonly FunctionTool[] = [
   fn("run_command", "Run a shell command in the workspace. No network.", { cmd: "The command line." }),
 ];
 
+/**
+ * Searches the gateway may run in one research request. Uncapped, one live run made five
+ * and the results were 75k prompt tokens ($0.30 of a $0.32 run on model D, 2026-11-11).
+ */
+export const MAX_WEB_SEARCHES = 2;
+
 export interface PhaseToolSet {
   tools: Tool[];
   mcpServerIds?: string[];
@@ -38,7 +44,7 @@ export interface PhaseToolSet {
 export function toolSetFor(phase: Phase, mcpServerIds: readonly string[] = []): PhaseToolSet {
   switch (phase) {
     case "research":
-      return { tools: [{ type: "otari_web_fetch" }, { type: "otari_web_search" }] };
+      return { tools: [{ type: "otari_web_fetch" }, { type: "otari_web_search", max_uses: MAX_WEB_SEARCHES }] };
     case "act":
       return mcpServerIds.length > 0 ? { tools: [...LOCAL_TOOLS], mcpServerIds: [...mcpServerIds] } : { tools: [...LOCAL_TOOLS] };
   }
