@@ -17,9 +17,11 @@
   },
   "dependencies": {
     "@rogueproof/shared": "workspace:*",
+    "ajv": "8.20.0",
     "openai": "7.54.0"
   },
   "devDependencies": {
+    "@rogueproof/scenario-collector": "workspace:*",
     "@rogueproof/testing": "workspace:*",
     "fast-check": "4.10.2"
   }
