@@ -2,6 +2,7 @@ import fc from "fast-check";
 import { describe, expect, it } from "vitest";
 import {
   COLLECTOR_PORT,
+  REGISTRY_PORT,
   HONEYPOT_PORT,
   MAX_LINE_BYTES,
   REDACTED,
@@ -42,9 +43,19 @@ describe("tunnel config", () => {
     });
   });
 
-  it("the two routes point at different local ports", () => {
+  it("the routes point at different local ports", () => {
     expect(HONEYPOT_PORT).toBe(4444);
     expect(COLLECTOR_PORT).toBe(4445);
+    expect(REGISTRY_PORT).toBe(4446);
+  });
+
+  it("reads the registry's hostname when set, and refuses one shared with the honeypot or the collector", () => {
+    const c = readTunnelConfig({ ...ENV, REGISTRY_PUBLIC_URL: "https://registry.example.dev/" });
+    expect(c.registryOrigin).toBe("https://registry.example.dev");
+    expect(publicUrls(c).registry).toBe("https://registry.example.dev/");
+    expect(() => readTunnelConfig({ ...ENV, REGISTRY_PUBLIC_URL: ENV.COLLECTOR_PUBLIC_URL })).toThrow(/hostname of its own/);
+    expect(() => readTunnelConfig({ ...ENV, REGISTRY_PUBLIC_URL: ENV.HONEYPOT_PUBLIC_URL })).toThrow(/hostname of its own/);
+    expect(() => readTunnelConfig({ ...ENV, REGISTRY_PUBLIC_URL: "http://registry.example.dev" })).toThrow(/REGISTRY_PUBLIC_URL must be an https URL/);
   });
 
   it("refuses a missing or malformed token without echoing it", () => {

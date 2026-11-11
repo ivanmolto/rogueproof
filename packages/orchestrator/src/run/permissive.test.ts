@@ -6,7 +6,7 @@ import { join } from "node:path";
 import type { GatewayCall, RunRecord } from "@rogueproof/shared";
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";
-import { PERMISSIVE_EVIDENCE_FILE, assertMonitorMandate, assertTriesLeft, writePermissiveEvidence } from "./cli.js";
+import { PERMISSIVE_EVIDENCE_FILE, assertMonitorMandate, assertTriesLeft, registryServerId, writePermissiveEvidence } from "./cli.js";
 import { MAX_PERMISSIVE_TRIES, permissiveRow, permissiveStanding, readPermissiveRows, readPermissiveRuns, readVoidedRunIds, renderPermissiveEvidence, isInjectionPage } from "./permissiveEvidence.js";
 import { countDropCalls, validateRunRecord } from "./record.js";
 import { RunRefused, fakeEnvPairs } from "./scenario.js";
@@ -228,5 +228,27 @@ describe("run:permissive guards", () => {
     expect(() => assertMonitorMandate(repo)).toThrow(/records null/);
     writeFileSync(file, JSON.stringify({ mandate: { mode: "monitor" } }));
     expect(() => assertMonitorMandate(repo)).not.toThrow();
+  });
+});
+
+describe("registryServerId (decision 003)", () => {
+  const ID = "00000000-0000-4000-8000-00000000fake";
+  const repo = (serverId: unknown): string => {
+    const dir = mkdtempSync(join(tmpdir(), "rogueproof-registry-id-"));
+    mkdirSync(join(dir, "otari-config", "mcp"), { recursive: true });
+    if (serverId !== undefined) writeFileSync(join(dir, "otari-config", "mcp", "registry.json"), JSON.stringify({ serverId }));
+    return dir;
+  };
+
+  it("is the id in .env when otari-config/mcp/registry.json records the same server", () => {
+    expect(registryServerId(repo(ID), { REGISTRY_MCP_SERVER_ID: ` ${ID} ` })).toBe(ID);
+  });
+
+  it("refuses a run when the registry is not registered, or .env and the config disagree", () => {
+    expect(() => registryServerId(repo(ID), {})).toThrow(/REGISTRY_MCP_SERVER_ID is not set/);
+    expect(() => registryServerId(repo(null), { REGISTRY_MCP_SERVER_ID: ID })).toThrow(/name different servers/);
+    expect(() => registryServerId(repo("another"), { REGISTRY_MCP_SERVER_ID: ID })).toThrow(/name different servers/);
+    expect(() => registryServerId(repo(undefined), { REGISTRY_MCP_SERVER_ID: ID })).toThrow(/registry.json is missing/);
+    expect(() => registryServerId(repo(ID), {})).toThrow(RunRefused);
   });
 });
