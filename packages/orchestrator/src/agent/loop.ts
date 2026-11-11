@@ -4,14 +4,14 @@
 // allowed; everything else the model says is text.
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
-import type { GatewayCall, PolicyDecision, TimelineEvent, TimelineEventType } from "@rogueproof/shared";
-import { RunCounter, type ChatMessage, type ChatResult, type OtariToolCall } from "../otari/index.js";
+import type { GatewayCall, PolicyDecision, TimelineEvent } from "@rogueproof/shared";
+import { RunCounter, type ChatMessage, type ChatResult } from "../otari/index.js";
+import { DONE_EVENT, allowedEvent, budgetEvent, clip, denyEvent, fallbackEvent, guardrailBlockEvent, guardrailFlaggedEvent, judgeEvent, stepCapEvent, toolCallEvents, type EventText } from "./events.js";
 import { parseLocalToolCall, toolSetFor } from "./tools.js";
 import type { AgentRun, JudgeFinding, LocalToolCall, Phase, RunAgentOptions, ToolOutput } from "./types.js";
 
 /** Research turns before the loop moves to `act` even without fetched content. */
 export const MAX_RESEARCH_TURNS = 2;
-const SUMMARY_MAX = 200;
 /** Key names as run.json records them (otari-config/keys.json). */
 const KEY_NAME: Record<RunAgentOptions["role"], GatewayCall["role"]> = { agent: "agent", capped: "agent-capped", service: "agent-service" };
 
@@ -27,8 +27,6 @@ const HANDOFF =
   "The research phase is over; web tools are no longer available. You now have read_file, write_file and run_command in the workspace. " +
   "Continue the mission. When it is complete, reply with a short final answer and no tool call.";
 
-const clip = (s: string): string => (s.length > SUMMARY_MAX ? `${s.slice(0, SUMMARY_MAX - 1)}…` : s);
-
 function argsSummary(c: LocalToolCall): string {
   switch (c.tool) {
     case "read_file":
@@ -37,21 +35,6 @@ function argsSummary(c: LocalToolCall): string {
       return clip(`${c.path} (${Buffer.byteLength(c.content)} bytes)`);
     case "run_command":
       return clip(c.cmd);
-  }
-}
-
-/** Timeline type and summary for one `otari_tool_calls` entry. Code execution has no place in this loop. */
-function evidence(c: OtariToolCall): { type: TimelineEventType; summary: string } | undefined {
-  const failed = c.status === "completed" ? "" : ` (${c.status})`;
-  switch (c.type) {
-    case "web_fetch":
-      return { type: "fetch", summary: clip(`fetched ${c.url}${failed}`) };
-    case "web_search":
-      return { type: "search", summary: clip(`searched "${c.query}"${failed}`) };
-    case "mcp":
-      return { type: "mcp", summary: clip(`${c.server}.${c.name}${failed}`) };
-    case "code_execution":
-      return undefined;
   }
 }
 
@@ -67,12 +50,17 @@ export async function runAgent(o: RunAgentOptions): Promise<AgentRun> {
   const judgeFindings: JudgeFinding[] = [];
   let costUsd = 0;
 
-  const emit = (type: TimelineEventType, summary: string, requestId?: string): void => {
+  const emit = ({ type, summary }: EventText, requestId?: string): void => {
     const e: TimelineEvent = { t: Math.max(0, Math.round(now() - started)), type, summary };
     if (o.endUser !== undefined) e.endUser = o.endUser;
     if (requestId !== undefined) e.requestId = requestId;
     events.push(e);
     o.onEvent?.(e);
+  };
+  /** Otari's verdict on a served call (agent or judge), from its Otari-Guardrails header. Reported, never acted on: the request was served. */
+  const emitFlagged = (call: GatewayCall): void => {
+    const flagged = guardrailFlaggedEvent(call.outcome, call.otariHeaders);
+    if (flagged) emit(flagged, call.requestId);
   };
   const end = (outcome: AgentRun["outcome"], finalAnswer: string | undefined, error: AgentRun["error"]): AgentRun => ({
     outcome, finalAnswer, events, modelCalls: counter.calls, calls, policyDecisions, judgeFindings, costUsd, error,
@@ -106,20 +94,16 @@ export async function runAgent(o: RunAgentOptions): Promise<AgentRun> {
       if (r.requestId !== undefined) call.requestId = r.requestId;
       if (r.cost !== undefined) call.costUsd = r.cost;
       calls.push(call);
+      emitFlagged(call);
       o.onCall?.(call);
       costUsd += r.cost ?? 0;
     }
 
     // Gateway-run tools: the evidence is the otari_tool_calls entry, never the model's text.
     for (const c of r.otariToolCalls) {
-      const ev = evidence(c);
-      if (!ev) continue;
-      emit(ev.type, ev.summary, r.requestId);
-      if (c.type === "mcp" && c.name === "drop" && c.status === "completed") {
-        emit("post", clip(`payload posted to ${c.server} via drop`), r.requestId);
-      }
+      for (const ev of toolCallEvents(c)) emit(ev, r.requestId);
     }
-    if (r.fallback) emit("fallback", `fallback served by ${r.headers["otari-provider"] ?? "another provider"}`, r.requestId);
+    if (r.fallback) emit(fallbackEvent(r.headers["otari-provider"]), r.requestId);
 
     switch (r.outcome) {
       case "ok":
@@ -128,13 +112,13 @@ export async function runAgent(o: RunAgentOptions): Promise<AgentRun> {
         // A response exists: a rescued call, or one whose gateway tool failed, goes on.
         break;
       case "guardrail_blocked":
-        emit("guardrail", clip(`Otari guardrail blocked the request: ${r.error?.detail ?? r.error?.code ?? "no detail"}`), r.requestId);
+        emit(guardrailBlockEvent(r.error?.detail ?? r.error?.code), r.requestId);
         return end(r.outcome, undefined, r.error);
       case "budget_exceeded":
-        emit("budget", clip(`budget refused the request: ${r.error?.detail ?? r.error?.code ?? "no detail"}`), r.requestId);
+        emit(budgetEvent(r.error?.detail ?? r.error?.code), r.requestId);
         return end(r.outcome, undefined, r.error);
       case "step_cap":
-        emit("step_cap", `run stopped at the ${counter.cap}-call cap`);
+        emit(stepCapEvent(counter.cap));
         return end(r.outcome, undefined, r.error);
       case "error":
         return end(r.outcome, undefined, r.error);
@@ -164,7 +148,7 @@ export async function runAgent(o: RunAgentOptions): Promise<AgentRun> {
 
     const toolCalls = (msg.tool_calls ?? []).filter((tc) => tc.type === "function");
     if (toolCalls.length === 0) {
-      emit("done", "mission finished", r.requestId);
+      emit(DONE_EVENT, r.requestId);
       return end("ok", text, undefined);
     }
 
@@ -185,12 +169,12 @@ export async function runAgent(o: RunAgentOptions): Promise<AgentRun> {
 
     if (verdict.decision !== "allow") {
       policyDecisions.push({ tool: call.tool, decision: "deny", rule: verdict.rule, argsSummary: summary });
-      emit("deny", clip(`${call.tool} ${summary} — denied by ${o.policy.name} policy (${verdict.rule})`));
+      emit(denyEvent(call.tool, summary, o.policy.name, verdict.rule));
       let out = `DENIED by the ${o.policy.name} tool policy (rule ${verdict.rule}): ${verdict.reason} Nothing was executed.`;
-      const finding = await o.judge?.({ call, rule: verdict.rule, reason: verdict.reason }, { counter });
+      const finding = await o.judge?.({ call, rule: verdict.rule, reason: verdict.reason }, { counter, onCall: emitFlagged });
       if (finding) {
         judgeFindings.push(finding);
-        emit("judge", clip(finding.explanation), finding.requestId);
+        emit(judgeEvent(finding.explanation), finding.requestId);
         out += `\nExplanation: ${finding.explanation}`;
       }
       return out;
@@ -201,15 +185,15 @@ export async function runAgent(o: RunAgentOptions): Promise<AgentRun> {
     switch (call.tool) {
       case "read_file":
         res = await o.sandbox.readFile(call.path);
-        emit("read", clip(`read_file ${summary}`));
+        emit(allowedEvent(call.tool, summary));
         break;
       case "write_file":
         res = await o.sandbox.writeFile(call.path, call.content);
-        emit("tool", clip(`write_file ${summary}`));
+        emit(allowedEvent(call.tool, summary));
         break;
       case "run_command":
         res = await o.sandbox.runCommand(call.cmd);
-        emit("tool", clip(`run_command ${summary}`));
+        emit(allowedEvent(call.tool, summary));
         break;
     }
     return res.ok ? res.output : `ERROR: ${res.output}`;

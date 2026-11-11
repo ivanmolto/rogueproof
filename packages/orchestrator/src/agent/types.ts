@@ -52,7 +52,11 @@ export interface JudgeFinding {
  * and cannot change it; returning undefined (judge unavailable) leaves the deny
  * in place with the policy's reason only. Shares the run's call counter.
  */
-export type JudgeGate = (denial: Denial, ctx: { counter: RunCounter }) => Promise<JudgeFinding | undefined>;
+export type JudgeGate = (
+  denial: Denial,
+  /** `onCall` gets the judge's gateway call once it returned, so the loop can put Otari's guardrail verdict on it in the timeline. */
+  ctx: { counter: RunCounter; onCall?: (call: GatewayCall) => void },
+) => Promise<JudgeFinding | undefined>;
 
 export interface RunAgentOptions {
   client: OtariClient;

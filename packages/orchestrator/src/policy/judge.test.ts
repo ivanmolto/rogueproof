@@ -32,6 +32,14 @@ function gate(queue: Fixture[], profile: "rubric" | "dev" = "rubric") {
 }
 
 describe("judge gate", () => {
+  it("hands its gateway call to the caller's onCall as well as the gate's own", async () => {
+    const g = gate([reply(TWO)]);
+    const seen: GatewayCall[] = [];
+    await g.judge(denial, { counter: new RunCounter(), onCall: (c) => seen.push(c) });
+    expect(seen).toEqual(g.recorded);
+    expect(seen).toHaveLength(1);
+  });
+
   it("uses the judge key and model C on a rubric run", async () => {
     const g = gate([reply(TWO)]);
     const counter = new RunCounter();

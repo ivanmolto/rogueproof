@@ -71,6 +71,7 @@ export function createJudgeGate(o: JudgeGateOptions): JudgeGate {
       if (r.requestId !== undefined) call.requestId = r.requestId;
       if (r.cost !== undefined) call.costUsd = r.cost;
       o.onCall?.(call);
+      ctx.onCall?.(call);
     }
 
     switch (r.outcome) {

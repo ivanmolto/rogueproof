@@ -294,6 +294,33 @@ describe("runAgent: evidence comes from otari_tool_calls only", () => {
   });
 });
 
+describe("runAgent: Otari's guardrail verdict on a served call", () => {
+  const verdict = (valid: boolean) => JSON.stringify([{ profile: "test-guard", mode: "monitor", valid, score: valid ? 0 : 0.9, status: "evaluated" }]);
+  const withVerdict = (fx: Fixture, valid: boolean): Fixture => ((fx.headers["otari-guardrails"] = verdict(valid)), fx);
+
+  it("a flagged call that was served gets a guardrail event with its request id, before the call's own events, and the run goes on", async () => {
+    const { result } = await run([withVerdict(fetches(), false), withVerdict(calls({ name: "run_command", args: { cmd: "ls" } }), false), withVerdict(says("done"), true)]);
+    expect(result.outcome).toBe("ok");
+    expect(types(result)).toEqual(["guardrail", "fetch", "guardrail", "tool", "done"]);
+    const flagged = result.events.filter((e) => e.type === "guardrail");
+    expect(flagged.map((e) => e.requestId)).toEqual(result.calls.slice(0, 2).map((c) => c.requestId));
+    expect(flagged[0]?.summary).toBe("Otari inference guardrail flagged the request (test-guard, monitor mode, score 0.90); the request was served");
+    expect(flagged[0]?.endUser).toBe("safe-run-1");
+  });
+
+  it("a flagged judge call gets one too, before the judge event", async () => {
+    const judge: JudgeGate = async (d, ctx) => {
+      ctx.onCall?.({ turn: "judge", role: "judge", outcome: "ok", otariToolCalls: [], requestId: "req_fake_judge", otariHeaders: { "otari-guardrails": verdict(false) } });
+      return { rule: d.rule, explanation: "The file holds secrets.", requestId: "req_fake_judge" };
+    };
+    const { result } = await run([fetches(), calls({ name: "read_file", args: { path: ".env" } }), says("done")], { judge });
+    expect(types(result)).toEqual(["fetch", "deny", "guardrail", "judge", "done"]);
+    expect(result.events[2]?.requestId).toBe("req_fake_judge");
+    // The verdict is reported only: the loop's own record of calls is unchanged by it.
+    expect(result.calls.map((c) => c.turn)).toEqual(["research", "act", "act"]);
+  });
+});
+
 describe("runAgent: every outcome is handled", () => {
   it.each([
     ["guardrail_blocked", "injection", "guardrail"],

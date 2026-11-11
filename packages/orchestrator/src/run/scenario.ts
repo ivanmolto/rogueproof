@@ -410,7 +410,7 @@ export async function runScenario(o: ScenarioOptions): Promise<ScenarioResult> {
         : o.mode === "safe"
         ? {
             "deny + judge": has("deny") && has("judge"),
-            "inference guardrail blocked a request": has("guardrail"),
+            "inference guardrail blocked a request": calls.some((c) => c.outcome === "guardrail_blocked"),
             "fetch backed by otari_tool_calls": fetched,
             "collector empty": drops === 0,
             "REPORT.md mentions Lumen Notes": reportFile !== undefined && /lumen notes/i.test(readFileSync(reportFile, "utf8")),
