@@ -3,7 +3,11 @@
 import type { TimelineEvent, TimelineEventType } from "@rogueproof/shared";
 import Link from "next/link";
 import { useEffect, useRef, useState, type ReactNode } from "react";
-import { MODES, cardsAt, collectorNote, formatT, formatUsd, runKeyFor, statusText, stepDelay, type ModeKey, type ReplayView } from "../lib/view";
+import { createSseDecoder } from "../lib/sse";
+import { LIVE_CLIENT_TIMEOUT_MS, MODES, isLiveModeKey, cardsAt, collectorNote, formatT, formatUsd, isFailedOutcome, liveView, parseProfile, profileNote, runKeyFor, statusText, stepDelay, type LiveProfile, type ModeKey, type ReplayView } from "../lib/view";
+
+/** A live run started from this page: going, saved, or without a usable result. */
+type Live = { state: "running"; info: string | null } | { state: "ended" } | { state: "failed"; reason: string };
 
 // Who produced each kind of event. Otari's own decisions and the orchestrator's
 // app-level tool policy are never given the same label.
@@ -80,7 +84,30 @@ function EventRow({ event }: { event: TimelineEvent }) {
   );
 }
 
-export default function Dashboard() {
+export default function Dashboard({ liveProfile: initialProfile }: { liveProfile: LiveProfile }) {
+  // The profile is read from .env when a run starts, so the line must not go stale after an
+  // edit: ask again whenever the window comes back into focus.
+  const [liveProfile, setLiveProfile] = useState<LiveProfile>(initialProfile);
+  useEffect(() => {
+    let last = 0;
+    const refresh = (): void => {
+      if (document.visibilityState !== "visible" || Date.now() - last < 500) return;
+      last = Date.now();
+      fetch("/api/live", { cache: "no-store" })
+        .then((r) => (r.ok ? (r.json() as Promise<{ profile?: unknown }>) : undefined))
+        .then((b) => {
+          const p = parseProfile(b?.profile);
+          if (p !== undefined) setLiveProfile(p);
+        })
+        .catch(() => undefined);
+    };
+    window.addEventListener("focus", refresh);
+    document.addEventListener("visibilitychange", refresh);
+    return () => {
+      window.removeEventListener("focus", refresh);
+      document.removeEventListener("visibilitychange", refresh);
+    };
+  }, []);
   const [mode, setMode] = useState<ModeKey>("safe");
   const [fallbackDemo, setFallbackDemo] = useState(false);
   const [view, setView] = useState<ReplayView | null>(null);
@@ -88,6 +115,10 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const request = useRef(0);
+  const [live, setLive] = useState<Live | null>(null);
+  const liveAbort = useRef<AbortController | null>(null);
+  // Leaving the page drops the stream, not the run: the server lets it finish and save under runs/.
+  useEffect(() => () => liveAbort.current?.abort(), []);
 
   const total = view?.events.length ?? 0;
   useEffect(() => {
@@ -105,6 +136,8 @@ export default function Dashboard() {
 
   function reset(): void {
     request.current++;
+    liveAbort.current?.abort();
+    setLive(null);
     setView(null);
     setShown(0);
     setError(null);
@@ -113,6 +146,8 @@ export default function Dashboard() {
 
   async function replay(): Promise<void> {
     const mine = ++request.current;
+    liveAbort.current?.abort();
+    setLive(null);
     setLoading(true);
     setError(null);
     setView(null);
@@ -130,7 +165,69 @@ export default function Dashboard() {
     }
   }
 
-  const cards = view ? cardsAt(view, shown) : null;
+  /** Starts `run:<mode>` on this machine and shows its events as they arrive. */
+  async function runLive(): Promise<void> {
+    const mine = ++request.current;
+    liveAbort.current?.abort();
+    const abort = new AbortController();
+    liveAbort.current = abort;
+    const events: TimelineEvent[] = [];
+    const blocked: string[] = [];
+    setLoading(false);
+    setError(null);
+    setView(liveView(mode, events));
+    setShown(0);
+    setLive({ state: "running", info: null });
+    const fail = (reason: string): void => {
+      if (mine === request.current) setLive({ state: "failed", reason });
+    };
+    let timedOut = false;
+    const timer = setTimeout(() => {
+      timedOut = true;
+      abort.abort();
+    }, LIVE_CLIENT_TIMEOUT_MS);
+    try {
+      const res = await fetch(`/api/live/${mode}`, { method: "POST", headers: { "content-type": "application/json" }, body: "{}", cache: "no-store", signal: abort.signal });
+      if (!res.ok || !res.body) {
+        const body = (await res.json().catch(() => null)) as { error?: string } | null;
+        return fail(body?.error ?? `the live run could not start (${res.status})`);
+      }
+      const reader = res.body.pipeThrough(new TextDecoderStream()).getReader();
+      const decoder = createSseDecoder();
+      for (;;) {
+        const { value, done } = await reader.read();
+        if (done) break;
+        for (const m of decoder.push(value)) {
+          if (mine !== request.current) return;
+          if (m.type === "timeline") {
+            events.push(m.event);
+            if (m.guardrailBlocked && m.event.requestId !== undefined) blocked.push(m.event.requestId);
+            setView(liveView(mode, events, blocked));
+            setShown(events.length);
+          } else if (m.type === "info") setLive({ state: "running", info: m.text });
+          else if (m.type === "end") {
+            setView(m.view);
+            setShown(m.view.events.length);
+            setLive({ state: "ended" });
+            // What the run recorded is what .env held when it started.
+            const ran = parseProfile(m.view.profile);
+            if (ran !== undefined && ran !== null) setLiveProfile(ran);
+            return;
+          } else return fail(m.reason);
+        }
+      }
+      fail("the event stream ended before the run did");
+    } catch (e) {
+      if (timedOut) fail("no result after 4 minutes; the run was stopped");
+      else if (!abort.signal.aborted) fail(e instanceof Error ? e.message : "the live run failed");
+    } finally {
+      clearTimeout(timer);
+    }
+  }
+
+  const running = live?.state === "running";
+  const liveFailure = live?.state === "failed" ? live.reason : live?.state === "ended" && view && isFailedOutcome(view.outcome) ? `the run ended with outcome ${view.outcome}` : null;
+  const cards = view ? cardsAt(view, shown, live !== null && live.state !== "ended") : null;
   const playing = view !== null && shown < total;
   const blocked = cards ? cards.denied + cards.guardrailBlocked : 0;
   const note = view && cards ? collectorNote(view, cards) : null;
@@ -180,7 +277,13 @@ export default function Dashboard() {
           <button type="button" onClick={() => void replay()} disabled={loading} className="rounded border border-neutral-900 bg-[#FFC83D] px-3 py-1.5 text-sm font-semibold text-neutral-900 disabled:opacity-60">
             Replay golden
           </button>
-          <button type="button" disabled title="Live runs are not wired into the dashboard yet" className="rounded border border-neutral-300 px-3 py-1.5 text-sm text-neutral-500">
+          <button
+            type="button"
+            onClick={() => void runLive()}
+            disabled={loading || running || !isLiveModeKey(mode) || fallbackDemo}
+            title={!isLiveModeKey(mode) ? `Live runs are Safe mode only; use pnpm run:${mode}` : fallbackDemo ? "The fallback run is replay only" : `Starts pnpm run:${mode} on this machine: real Otari calls, real cost`}
+            className="rounded border border-neutral-900 px-3 py-1.5 text-sm font-semibold disabled:border-neutral-300 disabled:font-normal disabled:text-neutral-500"
+          >
             Run live
           </button>
           {playing ? (
@@ -189,8 +292,12 @@ export default function Dashboard() {
             </button>
           ) : null}
         </div>
+        <p data-testid="live-profile" data-profile={liveProfile ?? "invalid"} className="mt-2 text-sm">
+          <span className="font-semibold">Run live profile</span> · {profileNote(liveProfile)}
+        </p>
         <p className="mt-2 text-xs text-neutral-600">
-          A replay rebuilds a recorded golden run from its run.json and log.txt: no model call, no network. Live runs are not wired into the dashboard yet; use <code>pnpm run:{mode}</code>.
+          A replay rebuilds a recorded golden run from its run.json and log.txt: no model call, no network. Run live is Safe mode only: it starts <code>pnpm run:safe</code> on this machine (real Otari calls and cost; it needs Docker, the honeypot, the collector, the registry and the tunnel) and is stopped after 4 minutes.{isLiveModeKey(mode) ? "" : ` For a live ${MODES.find((m) => m.key === mode)?.label} run use `}
+          {isLiveModeKey(mode) ? null : <code>pnpm run:{mode}</code>}
         </p>
       </Section>
 
@@ -206,10 +313,15 @@ export default function Dashboard() {
         <Card
           id="end-user"
           label="End user"
-          value={view ? (view.endUser ?? "none") : "—"}
-          note={view ? (view.endUser === null ? `plain key, names no end user · run label ${view.runLabel}` : view.endUserSpendUsd !== null ? `spend ${formatUsd(view.endUserSpendUsd)}` : undefined) : undefined}
+          value={view ? (view.endUser ?? (live && live.state !== "ended" ? "—" : "none")) : "—"}
+          note={view && !(live && live.state !== "ended") ? (view.endUser === null ? `plain key, names no end user · run label ${view.runLabel}` : view.endUserSpendUsd !== null ? `spend ${formatUsd(view.endUserSpendUsd)}` : undefined) : undefined}
         />
-        <Card id="status" label="Status" value={cards ? statusText(cards.status) : loading ? "Loading…" : "Ready"} note={view ? `${shown}/${total} events · ${view.agentModel}` : undefined} />
+        <Card
+          id="status"
+          label="Status"
+          value={live?.state === "failed" ? "Live run failed" : cards ? statusText(cards.status) : loading ? "Loading…" : "Ready"}
+          note={view ? (live && live.state !== "ended" ? `live · ${shown} event${shown === 1 ? "" : "s"}${running && live.info ? ` · ${live.info}` : ""}` : `${live ? `live · profile ${view.profile} · ` : ""}${shown}/${total} events · ${view.agentModel}`) : undefined}
+        />
       </div>
 
       <Section title="Attack Arena" hint="What the agent did, in order. Gateway-run tools are shown only when Otari reported them in otari_tool_calls.">
@@ -217,6 +329,14 @@ export default function Dashboard() {
           <p role="alert" className="rounded border border-neutral-400 p-3 text-sm">
             Replay failed: {error}
           </p>
+        ) : null}
+        {liveFailure !== null ? (
+          <div role="alert" data-testid="live-failed" className="mb-2 rounded border border-neutral-900 p-3 text-sm">
+            <p className="break-words font-medium">Live run failed: {liveFailure}</p>
+            <button type="button" data-testid="fallback-to-replay" onClick={() => void replay()} className="mt-2 rounded border border-neutral-900 bg-[#FFC83D] px-3 py-1.5 text-sm font-semibold text-neutral-900">
+              Fall back to replay
+            </button>
+          </div>
         ) : null}
         {view && view.problems.length > 0 ? (
           <ul data-testid="problems" className="mb-2 rounded border border-neutral-400 p-3 text-sm">
@@ -270,11 +390,11 @@ export default function Dashboard() {
             {view.events.slice(0, shown).map((e, i) =>
               e.type === "guardrail" && !(e.requestId !== undefined && view.guardrailBlockedRequestIds.includes(e.requestId)) ? <QuietRow key={i} event={e} /> : <EventRow key={i} event={e} />,
             )}
-            {shown === 0 ? <li className="px-2 py-1.5 text-sm text-neutral-500">Starting…</li> : null}
+            {shown === 0 && live?.state !== "failed" ? <li className="px-2 py-1.5 text-sm text-neutral-500">{running && live.info ? `Starting… ${live.info}` : "Starting…"}</li> : null}
           </ol>
         ) : null}
         {view ? null : (
-          <p className="rounded border border-dashed border-neutral-400 p-3 text-sm text-neutral-600">{loading ? "Loading the golden run…" : "Pick a mode and press Replay golden."}</p>
+          <p className="rounded border border-dashed border-neutral-400 p-3 text-sm text-neutral-600">{loading ? "Loading the golden run…" : "Pick a mode and press Replay golden or Run live."}</p>
         )}
       </Section>
 

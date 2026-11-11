@@ -16,6 +16,16 @@ export const MODES = [
   { key: "budget", label: "Budget-limited" },
 ] as const;
 export type ModeKey = (typeof MODES)[number]["key"];
+export const isModeKey = (v: string): v is ModeKey => MODES.some((m) => m.key === v);
+
+/**
+ * The modes "Run live" starts. Safe only: a live Permissive run spends one of
+ * the bounded rubric tries and rewrites its evidence file, and a Budget-limited
+ * run needs the org owner to set request_limit first. Both stay `pnpm run:*`
+ * commands, and replays here.
+ */
+export const LIVE_MODE_KEYS: readonly ModeKey[] = ["safe"];
+export const isLiveModeKey = (v: string): v is ModeKey => (LIVE_MODE_KEYS as readonly string[]).includes(v);
 
 /** The golden run a mode replays. Safe has a second one, recorded with the fallback recipe. */
 export const runKeyFor = (mode: ModeKey, fallbackDemo: boolean): RunKey => (mode === "safe" && fallbackDemo ? "safe-fallback" : mode);
@@ -61,7 +71,7 @@ export interface Cards {
   /** Requests Otari's inference guardrail flagged and served (Monitor mode). */
   guardrailFlagged: number;
   fallbacks: number;
-  status: "ready" | "replaying" | Outcome;
+  status: "ready" | "replaying" | "running" | Outcome;
   /** The gateway's budget refusal, once its event has played. */
   budgetMessage: string | null;
   /** The `post` events played so far: completed drops on the collector. */
@@ -70,11 +80,14 @@ export interface Cards {
   exfiltrated: boolean;
 }
 
-/** The cards after the first `shown` events of the run have played. */
-export function cardsAt(view: ReplayView, shown: number): Cards {
+/**
+ * The cards after the first `shown` events of the run have played. `open`: a
+ * live run that has not ended, so its last event so far is not the run's end.
+ */
+export function cardsAt(view: ReplayView, shown: number, open = false): Cards {
   const n = Math.max(0, Math.min(Math.trunc(shown) || 0, view.events.length));
   const played = view.events.slice(0, n);
-  const done = n === view.events.length && n > 0;
+  const done = !open && n === view.events.length && n > 0;
   const blocked = new Set(view.guardrailBlockedRequestIds);
   const count = (pred: (e: TimelineEvent) => boolean): number => played.filter(pred).length;
   const isBlock = (e: TimelineEvent): boolean => e.type === "guardrail" && e.requestId !== undefined && blocked.has(e.requestId);
@@ -88,7 +101,7 @@ export function cardsAt(view: ReplayView, shown: number): Cards {
     guardrailBlocked: count(isBlock),
     guardrailFlagged: count((e) => e.type === "guardrail" && !isBlock(e)),
     fallbacks: count((e) => e.type === "fallback"),
-    status: n === 0 ? "ready" : done ? view.outcome : "replaying",
+    status: open ? "running" : n === 0 ? "ready" : done ? view.outcome : "replaying",
     budgetMessage: played.find((e) => e.type === "budget")?.summary ?? null,
     posts,
     exfiltrated: posts.length > 0 && collector !== null && collector.crossCheck === "match" && collector.drops > 0,
@@ -113,6 +126,52 @@ export function collectorNote(view: ReplayView, cards: Cards): string | null {
     : "No exfiltration in this run: the collector held 0 payloads afterwards.";
 }
 
+/**
+ * A live run while it is going: the events received so far and nothing else.
+ * Totals, the collector's count and the outcome come from run.json when the
+ * run ends, and the server's view then replaces this one.
+ */
+export function liveView(mode: ModeKey, events: readonly TimelineEvent[], guardrailBlockedRequestIds: readonly string[] = []): ReplayView {
+  return {
+    run: mode,
+    runId: "",
+    mode,
+    profile: "",
+    outcome: "ok",
+    endUser: events.find((e) => e.endUser !== undefined)?.endUser ?? null,
+    runLabel: "",
+    agentModel: "",
+    costUsd: null,
+    endUserSpendUsd: null,
+    collector: null,
+    // The orchestrator says which guardrail events are refusals (the live stream's `guardrailBlocked`); nothing here reads the wording.
+    guardrailBlockedRequestIds: [...guardrailBlockedRequestIds],
+    events: [...events],
+    problems: [],
+  };
+}
+
+/** MODEL_PROFILE a live run will start under; null when it is set to something the run refuses. */
+export type LiveProfile = "dev" | "rubric" | null;
+
+/** A profile out of an API answer or a run record; undefined when it is neither a profile nor "not a profile" (null). */
+export function parseProfile(v: unknown): LiveProfile | undefined {
+  return v === "dev" || v === "rubric" || v === null ? v : undefined;
+}
+
+/** What the profile means for a run started now, in the page's words. */
+export function profileNote(p: LiveProfile): string {
+  if (p === "rubric") return "rubric: open-weight models A/B/C through otari.ai";
+  if (p === "dev") return "dev: model D (Claude through otari.ai on your Anthropic provider key); not a rubric run";
+  return "not dev or rubric: the run will refuse to start (MODEL_PROFILE in .env)";
+}
+
+/** The server stops a live run after four minutes; the page gives up a little later if nothing told it so. */
+export const LIVE_CLIENT_TIMEOUT_MS = 4 * 60_000 + 15_000;
+
+/** Outcomes of a saved live run that still call for the golden replay. */
+export const isFailedOutcome = (o: Outcome): boolean => o === "error" || o === "tool_error";
+
 export const STEP_MIN_MS = 60;
 export const STEP_MAX_MS = 400;
 /** Recorded time is compressed by this factor for playback. */
@@ -133,6 +192,7 @@ export const formatT = (ms: number): string => `${(ms / 1000).toFixed(1)}s`;
 const STATUS_TEXT: Record<Cards["status"], string> = {
   ready: "Ready",
   replaying: "Replaying…",
+  running: "Running live…",
   ok: "Mission completed",
   fallback: "Completed on a fallback",
   guardrail_blocked: "Stopped by Otari guardrail",
