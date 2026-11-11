@@ -54,4 +54,5 @@ NOTES
   embedded rasters, filters or gradients. The theme-aware favicon.svg adds a
   style block for prefers-color-scheme switching.
 - Readability at 16px is judged by eye, not machine-checked.
-- The dashboard does not reference these files yet.
+- The dashboard references the favicon, the Apple touch icon and the social
+  card (app/layout.tsx) and flat-mark/mark-light.svg in its header.
