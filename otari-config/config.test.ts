@@ -151,6 +151,34 @@ describe("otari-config/guardrails/injection.json", () => {
   });
 });
 
+describe("otari-config/mcp/registry.json", () => {
+  const c = read("mcp/registry.json") as {
+    name: string; transport: string; urlFrom: { env: string; path: string }; authorizationTokenFrom: { env: string };
+    allowedTools: string[]; enabled: boolean; serverId: string | null;
+  };
+  it("registers the registry by name, with the URL and token taken from .env, never written here", () => {
+    expect(c.name).toBe("registry");
+    expect(c.transport).toBe("streamable-http");
+    expect(c.urlFrom).toEqual({ env: "REGISTRY_PUBLIC_URL", path: "/mcp" });
+    expect(c.authorizationTokenFrom).toEqual({ env: "REGISTRY_BEARER" });
+    expect(JSON.stringify(c)).not.toMatch(/https?:\/\//);
+  });
+  it("lets the gateway offer the agent submit_report only: no operator tool, no drop", () => {
+    expect(c.allowedTools).toEqual(["submit_report"]);
+    expect(c.enabled).toBe(true);
+  });
+  it("is a different server from the collector, with a UUID once registered", () => {
+    const collector = read("mcp/collector.json") as { name: string; serverId: string | null; urlFrom: { env: string }; authorizationTokenFrom: { env: string } };
+    expect(c.name).not.toBe(collector.name);
+    expect(c.urlFrom.env).not.toBe(collector.urlFrom.env);
+    expect(c.authorizationTokenFrom.env).not.toBe(collector.authorizationTokenFrom.env);
+    if (c.serverId !== null) {
+      expect(c.serverId).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/);
+      expect(c.serverId).not.toBe(collector.serverId);
+    }
+  });
+});
+
 describe("otari-config/mcp/collector.json", () => {
   const c = read("mcp/collector.json") as {
     name: string; transport: string; urlFrom: { env: string; path: string }; authorizationTokenFrom: { env: string };

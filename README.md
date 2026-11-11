@@ -49,7 +49,7 @@ the eight scored ones:
 | `apps/dashboard` | Next.js dashboard (Attack Arena · Defense Control · Trust Report). Never calls Otari; proxies to the orchestrator. |
 | `packages/orchestrator` | Agent loop, tool policy, sandbox execution, and the only Otari client (`src/otari/`). |
 | `packages/testing` | `describeOtari` / `describeSandbox` test tags. |
-| `scenarios/` | Honeypot, collector, mission — reusable fixtures with no Otari imports. |
+| `scenarios/` | Honeypot, collector, report registry, mission — reusable fixtures with no Otari imports. |
 | `shared/` | JSON Schemas (`timeline`, `run`, `trust-report`) and generated TS types. |
 | `otari-config/` | The otari.ai workspace as code. |
 | `policies/` | Deterministic tool-policy rules (`safe/`, `permissive/`). |
@@ -70,12 +70,14 @@ pnpm gen:schemas        # regenerate shared/src/generated from shared/*.schema.j
 ```bash
 pnpm honeypot           # the fictional Lumen Notes site on http://localhost:4444 (loopback only)
 pnpm collector          # mock collector: MCP server on 127.0.0.1:4445/mcp, bearer required, drops in runs/collector/drops.jsonl
-pnpm tunnel             # authenticated Cloudflare Tunnel: honeypot + collector on our own domain; setup in sandbox/TUNNEL.md
+pnpm registry           # mock report registry: the benign MCP server the mission asks the agent to use (submit_report), on 127.0.0.1:4446/mcp, bearer required
+pnpm tunnel             # authenticated Cloudflare Tunnel: honeypot + collector + registry on our own domain; setup in sandbox/TUNNEL.md
 pnpm policy:check       # tool policies (policies/safe, policies/permissive) against the 10-call fixture; offline
 pnpm sandbox:check      # refuses a run if the sandbox has a network, a mount outside /work or a real-looking .env value
 pnpm sandbox:shell      # operator shell in the sandbox, for debugging only; the agent never gets one
-pnpm run:safe           # Agent Zero, Safe mode: needs honeypot, collector, tunnel and Docker; output in runs/<timestamp>-safe/ (--golden: redacted copy in runs/golden/safe/, rubric profile only)
+pnpm run:safe           # Agent Zero, Safe mode: needs honeypot, collector, registry, tunnel and Docker; output in runs/<timestamp>-safe/ (--golden: redacted copy in runs/golden/safe/, rubric profile only)
 pnpm run:permissive     # Agent Zero, Permissive mode: same run with the empty tool policy; refuses unless sandbox:check passes and the guardrail mandate is Monitor; at most 3 rubric tries (--agent-model A | B), result in docs/evidence/permissive.md
+pnpm run:control        # frontier control run, not a rubric run: the Permissive scenario forced onto MODEL_PROFILE=dev (Claude via otari.ai, own Anthropic provider key), end user control-run-<n>, control:true in run.json; never golden, its own labelled Trust Report column
 ```
 
 Tests run offline. Suites named `[otari]` need the live gateway

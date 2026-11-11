@@ -49,6 +49,9 @@ describe(".env.example", () => {
       COLLECTOR_PUBLIC_URL: "",
       COLLECTOR_BEARER: "",
       COLLECTOR_MCP_SERVER_ID: "",
+      REGISTRY_PUBLIC_URL: "",
+      REGISTRY_BEARER: "",
+      REGISTRY_MCP_SERVER_ID: "",
       HONEYPOT_PREFIX: "/lumen-notes",
     });
   });

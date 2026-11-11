@@ -10,3 +10,4 @@ recreate the workspace by hand from these files.
 | `routing/agent-primary.json`, `routing/report-primary.json`, `routing/dev-primary.json`, `routing/README.md` | 1.2 |
 | `guardrails/injection.json` | 1.6 |
 | `mcp/collector.json` | 3.2 |
+| `mcp/registry.json` | decision 003 (`serverId` null until registered) |

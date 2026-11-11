@@ -1,12 +1,13 @@
 # Tunnel
 
-`pnpm tunnel` exposes two local services on our own domain through one
+`pnpm tunnel` exposes three local services on our own domain through one
 authenticated Cloudflare Tunnel:
 
 | Public hostname | Local service | Started by |
 |---|---|---|
 | `honeypot.<domain>` | `http://localhost:4444` | `pnpm honeypot` |
 | `collector.<domain>` | `http://localhost:4445` | `pnpm collector` |
+| `registry.<domain>` | `http://localhost:4446` | `pnpm registry` |
 
 ## Why it exists
 
@@ -25,6 +26,10 @@ fetches the honeypot; see `sandbox/README.md`.
 - **Honeypot.** A static, fictional site. It is served only under
   `HONEYPOT_PREFIX`, carries `noindex` on every page and a `robots.txt` that
   disallows everything. It holds no secrets.
+- **Registry.** The benign report registry (decision 003): an MCP server at
+  `/mcp` on its own hostname, with its own bearer token (`REGISTRY_BEARER`),
+  checked the same way as the collector's. It stores report titles and
+  summaries locally and forwards nothing.
 - **Collector.** An MCP server at `/mcp`. It requires a bearer token
   (`COLLECTOR_BEARER`) on every request and answers `401` to anything else,
   on every path; the check is in the collector itself, before it reads the
@@ -48,12 +53,13 @@ in progress.
    Copy only the token into `.env` as `TUNNEL_TOKEN`. Do not run the
    `service install` commands shown there: the tunnel should run only while
    `pnpm tunnel` does, not as a permanent system service.
-4. **Add two routes** of type "Published application" on the tunnel:
+4. **Add three routes** of type "Published application" on the tunnel:
 
    | Subdomain | Service URL |
    |---|---|
    | `honeypot` | `http://localhost:4444` |
    | `collector` | `http://localhost:4445` |
+   | `registry` | `http://localhost:4446` |
 
    Cloudflare creates the DNS records. Use `http` for the service URL: the
    local services speak plain HTTP on loopback and Cloudflare terminates TLS.
@@ -66,6 +72,8 @@ in progress.
    HONEYPOT_PUBLIC_URL=     # https://honeypot.<domain>
    COLLECTOR_PUBLIC_URL=    # https://collector.<domain>
    COLLECTOR_BEARER=        # openssl rand -hex 32
+   REGISTRY_PUBLIC_URL=     # https://registry.<domain>
+   REGISTRY_BEARER=         # openssl rand -hex 32, a different value from the collector's
    HONEYPOT_PREFIX=         # path prefix, e.g. /lumen-notes or /<random>/lumen-notes
    ```
 
@@ -78,7 +86,8 @@ otherwise, the dashboard is what takes effect.
 ```
 pnpm honeypot     # terminal 1
 pnpm collector    # terminal 2; MCP on 127.0.0.1:4445/mcp, drops in runs/collector/drops.jsonl
-pnpm tunnel       # terminal 3; prints the public URLs, then cloudflared's log
+pnpm registry     # terminal 3; MCP on 127.0.0.1:4446/mcp, reports in runs/registry/reports.jsonl
+pnpm tunnel       # terminal 4; prints the public URLs, then cloudflared's log
 ```
 
 `pnpm tunnel` refuses to start when the token is missing or a public URL is not
@@ -92,6 +101,7 @@ Check from outside:
 ```
 curl -sI "$HONEYPOT_PUBLIC_URL$HONEYPOT_PREFIX/changelog.html" | head -1
 curl -s -o /dev/null -w '%{http_code}\n' -X POST "$COLLECTOR_PUBLIC_URL/mcp"   # 401: up, and closed without the bearer
+curl -s -o /dev/null -w '%{http_code}\n' -X POST "$REGISTRY_PUBLIC_URL/mcp"    # 401: same for the registry
 ```
 
 ## If Otari cannot fetch the honeypot

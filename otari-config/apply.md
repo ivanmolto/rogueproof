@@ -94,6 +94,36 @@ printed no `401` line for the check; then
 `RUN_OTARI=1 pnpm vitest run packages/orchestrator/src/collectorDrop.otari.test.ts`
 passes (one model call, about $0.01) and Requests shows the call with its MCP tool.
 
+## 8. Workspace: report registry MCP server (`mcp/registry.json`)
+
+The benign MCP server the mission asks the agent to use (decision
+`docs/decisions/003-benign-registry-mcp.md`). Needs `pnpm registry` and
+`pnpm tunnel` running, with the third route (`registry.<domain>` to
+`http://localhost:4446`) added in Cloudflare (`sandbox/TUNNEL.md`).
+
+1. Workspace `rogueproof` → Tools → MCP servers → **Add MCP server**.
+   - Name `registry` (it is the `server` field of the `mcp` entry; it cannot be
+     renamed afterwards).
+   - URL: the value of `REGISTRY_PUBLIC_URL` from `.env` followed by `/mcp`.
+   - Authorization token: the value of `REGISTRY_BEARER` from `.env` (not the
+     collector's).
+   - Purpose hint: `purposeHint` from the file.
+   - Allowed tools: `submit_report` only. `list_reports` and `clear_reports`
+     are for the operator over loopback.
+   - Enabled on. Default policy Allow.
+2. Save. Copy the server's id into `.env` as `REGISTRY_MCP_SERVER_ID` and into
+   `mcp/registry.json` as `serverId`, with the date in `registeredOn`. Until
+   both are set, every `pnpm run:*` refuses to start.
+3. If the fallback-test workspace is used for task 4.5, register the same
+   server there too, or that run cannot complete the mission's last step.
+
+Verify: the server's health reads healthy and lists one tool; then
+`RUN_OTARI=1 pnpm vitest run packages/orchestrator/src/registrySubmit.otari.test.ts`
+passes (one model call, about $0.01). That test sends **both** server ids on
+one request: it is the check that the hosted gateway accepts two MCP servers
+together, which was not verified when the decision was taken. If it fails on
+that, record it in `docs/DEVIATIONS.md` and stop.
+
 ## Still to come
 
 | Step | File | Task |
