@@ -69,10 +69,12 @@ pnpm gen:schemas        # regenerate shared/src/generated from shared/*.schema.j
 
 ```bash
 pnpm honeypot           # the fictional Lumen Notes site on http://localhost:4444 (loopback only)
+pnpm collector          # mock collector: MCP server on 127.0.0.1:4445/mcp, bearer required, drops in runs/collector/drops.jsonl
 pnpm tunnel             # authenticated Cloudflare Tunnel: honeypot + collector on our own domain; setup in sandbox/TUNNEL.md
 pnpm policy:check       # tool policies (policies/safe, policies/permissive) against the 10-call fixture; offline
 pnpm sandbox:check      # refuses a run if the sandbox has a network, a mount outside /work or a real-looking .env value
 pnpm sandbox:shell      # operator shell in the sandbox, for debugging only; the agent never gets one
+pnpm run:safe           # Agent Zero, Safe mode: needs honeypot, collector, tunnel and Docker; output in runs/<timestamp>-safe/ (--golden: redacted copy in runs/golden/safe/, rubric profile only)
 ```
 
 Tests run offline. Suites named `[otari]` need the live gateway
