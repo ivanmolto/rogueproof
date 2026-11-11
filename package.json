@@ -21,6 +21,8 @@
     "smoke": "pnpm -r build && node packages/orchestrator/dist/smoke.js",
     "telemetry": "pnpm -r build && node packages/orchestrator/dist/telemetry.js",
     "honeypot": "pnpm --filter @rogueproof/scenario-honeypot build && node scenarios/honeypot/dist/main.js",
+    "tunnel": "pnpm --filter \"@rogueproof/orchestrator...\" build && node packages/orchestrator/dist/tunnel.js",
+    "policy:check": "pnpm --filter \"@rogueproof/orchestrator...\" build && node packages/orchestrator/dist/policyCheck.js",
     "sandbox:check": "pnpm --filter \"@rogueproof/orchestrator...\" build && node packages/orchestrator/dist/sandboxCheck.js",
     "sandbox:shell": "pnpm --filter \"@rogueproof/orchestrator...\" build && node packages/orchestrator/dist/sandboxShell.js"
   },
