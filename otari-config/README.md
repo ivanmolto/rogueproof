@@ -11,3 +11,4 @@ recreate the workspace by hand from these files.
 | `guardrails/injection.json` | 1.6 |
 | `mcp/collector.json` | 3.2 |
 | `mcp/registry.json` | decision 003 (`serverId` null until registered) |
+| `budgets/request-limit.json`, `budgets/reset.json` | 4.2 (the two `request_limit` PATCHes around `pnpm run:budget`; sent by the org owner, never by the orchestrator) |

@@ -1,0 +1,17 @@
+{
+  "$comment": "Budget-limited mode (task 4.2, R5): put a request_limit on the budget the agent-capped key points at, before `pnpm run:budget`. The gateway then serves that many requests on the key and refuses the next one; no credit is burned to reach the stop. Refused to a workspace API key, so the orchestrator never sends this: the org owner does, by hand. In the dashboard (seen 2026-11-11): Organization > Spend & budgets > Budgets > agent-capped (API key) > Edit > Token and request limits > Request limit 4 ('Requests per period'); the PATCH below is the same change over the API. The limit is per period (monthly) and the docs describe null as 'unlimited', not as a counter reset, so a budget that already counted requests in this period may leave fewer than 4; `pnpm run:budget` prints and records what GET /key/budget says is left before it starts (budgetStop.remainingBefore). Judge calls are on the judge key and do not count. Undo with reset.json straight after the run.",
+  "key": "agent-capped",
+  "auth": "org owner's dashboard session, or the master key; a workspace API key is refused",
+  "find": {
+    "method": "GET",
+    "path": "/api/v1/organizations/me/budgets"
+  },
+  "apply": {
+    "method": "PATCH",
+    "path": "/api/v1/organizations/me/budgets/<id of the agent-capped budget>",
+    "body": {
+      "request_limit": 4
+    }
+  },
+  "verify": "`pnpm run:budget` refuses to start unless GET /key/budget on the capped key reports limit_requests with remaining_requests above 0."
+}

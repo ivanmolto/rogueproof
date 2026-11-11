@@ -1,5 +1,5 @@
 {
-  "$comment": "Per-key budgets in USD, set in the dashboard on each key (Access > API keys). Enforced by the gateway: 'requests on them are billed to you and spend against your budget'. Total cap 9.00 against a 22.00 balance. request_limit for Budget-limited mode is set on agent-capped at run time (task 4.4) and reset to null afterwards. Key budgets reset monthly on the 1st at 00:00 UTC (dashboard default). The end-user budget never resets. Budgets live at organization level (Organization > Spend & budgets); a budget caps nothing until a key or end user points at it.",
+  "$comment": "Per-key budgets in USD, set in the dashboard on each key (Access > API keys). Enforced by the gateway: 'requests on them are billed to you and spend against your budget'. Total cap 9.00 against a 22.00 balance. request_limit for Budget-limited mode is set on agent-capped before `pnpm run:budget` (task 4.2, request-limit.json) and reset to null afterwards (reset.json, `pnpm budget:reset`). Key budgets reset monthly on the 1st at 00:00 UTC (dashboard default). The end-user budget never resets. Budgets live at organization level (Organization > Spend & budgets); a budget caps nothing until a key or end user points at it.",
   "currency": "USD",
   "keys": {
     "agent": {

@@ -1,0 +1,17 @@
+{
+  "$comment": "Budget-limited mode (task 4.2, R5): remove the request_limit from the agent-capped budget after every `pnpm run:budget`, so the key is back to its resting state in keys.json (requestLimit: null). In the dashboard: the same Edit form, Request limit cleared to blank. Same endpoint and same credential as request-limit.json. `pnpm budget:reset` prints this request and then verifies it with GET /key/budget on the capped key; it does not send the PATCH (an API key cannot).",
+  "key": "agent-capped",
+  "auth": "org owner's dashboard session, or the master key; a workspace API key is refused",
+  "find": {
+    "method": "GET",
+    "path": "/api/v1/organizations/me/budgets"
+  },
+  "apply": {
+    "method": "PATCH",
+    "path": "/api/v1/organizations/me/budgets/<id of the agent-capped budget>",
+    "body": {
+      "request_limit": null
+    }
+  },
+  "verify": "`pnpm budget:reset` exits 0 and prints `verified` once GET /key/budget on the capped key reports no limit_requests."
+}

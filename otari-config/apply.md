@@ -124,6 +124,35 @@ one request: it is the check that the hosted gateway accepts two MCP servers
 together, which was not verified when the decision was taken. If it fails on
 that, record it in `docs/DEVIATIONS.md` and stop.
 
+## 9. Budget-limited mode: `request_limit` on `agent-capped` (`budgets/request-limit.json`, `budgets/reset.json`)
+
+Done around every `pnpm run:budget`, by the org owner. The gateway refuses the
+budgets API to a workspace API key, so the orchestrator never sends either
+request.
+
+1. Organization → Spend & budgets → Budgets → `agent-capped (API key)` → **Edit**
+   → open **Token and request limits** → **Request limit** `4` ("Requests per
+   period"; leave Token limit blank and Limit (USD) at 1) → **Save budget**.
+   (Seen 2026-11-11; on 2026-11-07 the form had no such field.)
+2. The same change over the API is `PATCH /api/v1/organizations/me/budgets/<id>`
+   with `{"request_limit": 4}` (`budgets/request-limit.json`), the id from
+   `GET /api/v1/organizations/me/budgets`. `pnpm budget:reset` shows what the
+   gateway says is left: the limit is per period, so requests the key already
+   made this month count.
+3. `pnpm run:budget`. It refuses to start unless `GET /key/budget` on the capped
+   key shows the limit with requests left; it prints what is left, runs the Safe
+   scenario on that key and stops on the gateway's refusal (`budgetStop` in
+   `run.json`). `agent-capped` is a plain key, so no end user is named:
+   `budget-run-<n>` is the run's label. Judge calls are on the `judge` key and
+   do not count.
+4. Clear Request limit to blank in the same form and save (over the API:
+   `{"request_limit": null}`, `budgets/reset.json`),
+   then `pnpm budget:reset`: it prints the request and exits 0 once
+   `GET /key/budget` reports no request limit.
+
+Verify: Usage → Requests, filtered on `agent-capped`, shows the served requests
+and then the refused one; `run.json.budgetStop` holds the same request id.
+
 ## Still to come
 
 | Step | File | Task |
