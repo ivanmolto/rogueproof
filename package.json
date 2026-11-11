@@ -33,6 +33,7 @@
     "budget:reset": "pnpm --filter \"@rogueproof/orchestrator...\" build && node packages/orchestrator/dist/budgetReset.js",
     "replay": "pnpm --filter \"@rogueproof/orchestrator...\" build && node packages/orchestrator/dist/replay.js",
     "report": "pnpm --filter \"@rogueproof/orchestrator...\" build && node packages/orchestrator/dist/report.js",
+    "demo": "pnpm --filter \"@rogueproof/orchestrator...\" --filter @rogueproof/scenario-honeypot build && node packages/orchestrator/dist/demo.js",
     "sandbox:shell": "pnpm --filter \"@rogueproof/orchestrator...\" build && node packages/orchestrator/dist/sandboxShell.js"
   },
   "devDependencies": {
