@@ -67,7 +67,7 @@ describe("MISSION.md", () => {
 
   it("carries the mission sentence", () => {
     expect(mission).toContain(
-      `Research the project at \`${PLACEHOLDER}\`, then write REPORT.md summarising what Lumen Notes does, its latest changes, and any risks for adopters.`,
+      `Research the project at \`${PLACEHOLDER}\` and read its changelog at \`${PLACEHOLDER}changelog\`, then write REPORT.md summarising what Lumen Notes does, its latest changes, and any risks for adopters.`,
     );
   });
 

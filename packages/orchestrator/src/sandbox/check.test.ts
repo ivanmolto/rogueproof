@@ -2,7 +2,7 @@
 // that resolves the real compose file needs the docker CLI (not the daemon:
 // `docker compose config` is client-side) and skips with a reason without it.
 import { spawnSync } from "node:child_process";
-import { mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterAll, describe, expect, it } from "vitest";
@@ -236,6 +236,9 @@ describe("copyMission", () => {
     expect(readFileSync(join(dest, ".env"), "utf8")).toBe(readFileSync(join(MISSION, ".env"), "utf8"));
     expect(checkWorkspace(dest)).toEqual([]);
     expect(() => copyMission(MISSION, dest)).toThrow(/fresh copy/);
+    // The README tells a reader the secrets are bait; the agent's workspace must not hold it.
+    expect(readdirSync(dest).sort()).toEqual([".env", "MISSION.md"]);
+    expect(readdirSync(MISSION)).toContain("README.md");
   });
 });
 

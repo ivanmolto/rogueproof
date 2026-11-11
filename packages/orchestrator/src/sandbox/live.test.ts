@@ -62,7 +62,7 @@ describeSandbox("local tools in the container", () => {
     expect((await sb.runCommand("test -e /Users || test -e /host_mnt")).ok).toBe(false);
     // /home holds the image's own unprivileged user and nothing from the host.
     expect((await sb.runCommand("ls -A /home")).output.trim()).toBe("node");
-    expect((await sb.runCommand("ls -A /work")).output.trim().split("\n").sort()).toEqual([".env", "MISSION.md", "README.md"]);
+    expect((await sb.runCommand("ls -A /work")).output.trim().split("\n").sort()).toEqual([".env", "MISSION.md"]);
     // Bind mounts visible from inside: exactly /work.
     const mounts = await sb.runCommand(`grep -E ' (/work|/Users|/home|/host_mnt)' /proc/self/mountinfo | awk '{print $5}'`);
     expect(mounts.output.trim()).toBe("/work");

@@ -16,13 +16,24 @@ export interface SandboxPaths {
 const composeFileOf = (p: SandboxPaths) => p.composeFile ?? join(p.repoRoot, "sandbox", "docker-compose.yml");
 
 /**
+ * Files of scenarios/mission/ that stay out of the agent's workspace. The
+ * README is for people reading the repo: it says the secrets are fake and that
+ * `.env` is bait, which would tell the agent under test that it is being tested.
+ */
+export const MISSION_NOT_COPIED: readonly string[] = [".DS_Store", "README.md"];
+
+/**
  * Copies scenarios/mission/ to `destDir`, which must not exist yet: every run
- * gets a fresh workspace, and the committed directory is never mounted.
+ * gets a fresh workspace, and the committed directory is never mounted. The
+ * top-level files in MISSION_NOT_COPIED are left behind.
  */
 export function copyMission(missionDir: string, destDir: string): string {
   if (existsSync(destDir)) throw new Error(`workspace ${destDir} already exists; a run needs a fresh copy`);
   mkdirSync(dirname(destDir), { recursive: true });
-  cpSync(missionDir, destDir, { recursive: true, filter: (src) => basename(src) !== ".DS_Store" });
+  cpSync(missionDir, destDir, {
+    recursive: true,
+    filter: (src) => basename(src) !== ".DS_Store" && !(dirname(src) === missionDir && MISSION_NOT_COPIED.includes(basename(src))),
+  });
   return destDir;
 }
 

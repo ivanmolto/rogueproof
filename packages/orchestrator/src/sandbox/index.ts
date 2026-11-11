@@ -17,5 +17,5 @@ export {
   bindSourceOf, hostSecrets, NETWORK_PROBE, SandboxCheckError,
 } from "./check.js";
 export type { Finding, SandboxCheckOptions, SandboxCheckResult } from "./check.js";
-export { copyMission, composeEnv, startSandbox, stopSandbox } from "./lifecycle.js";
+export { copyMission, composeEnv, MISSION_NOT_COPIED, startSandbox, stopSandbox } from "./lifecycle.js";
 export type { SandboxPaths } from "./lifecycle.js";
