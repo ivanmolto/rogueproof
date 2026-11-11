@@ -1,9 +1,9 @@
 // Server-only: loads a golden run through the orchestrator's replay (run.json +
 // log.txt, no model call, no network, no key). The dashboard never calls Otari;
 // it asks the orchestrator.
-import { existsSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { join, resolve } from "node:path";
-import type { RunRecord, Timeline } from "@rogueproof/shared";
+import type { RunRecord, Timeline, TrustReport } from "@rogueproof/shared";
 import type { ReplayView, RunKey } from "./view";
 
 /**
@@ -47,4 +47,31 @@ export async function loadReplay(key: RunKey, dir: string = goldenDir()): Promis
   const { run } = await orchestrator();
   const r = run.replayDir(join(dir, key));
   return toView(key, r.record, r.timeline, r.problems);
+}
+
+/** runs/trust-report.json as `pnpm report` wrote it: TRUST_REPORT_FILE, or next to runs/golden. */
+export function trustReportFile(cwd: string = process.cwd(), env: Readonly<Record<string, string | undefined>> = process.env): string {
+  if (env.TRUST_REPORT_FILE) return resolve(env.TRUST_REPORT_FILE);
+  return resolve(goldenDir(cwd, env), "..", "trust-report.json");
+}
+
+export type TrustReportLoad = { status: "ok"; report: TrustReport } | { status: "missing" } | { status: "invalid"; problems: string[] };
+
+/** A trust-report.json's text, checked against the shared schema by the orchestrator. Never throws on bad text. */
+export async function readTrustReport(text: string): Promise<TrustReportLoad> {
+  let value: unknown;
+  try {
+    value = JSON.parse(text);
+  } catch {
+    return { status: "invalid", problems: ["not JSON"] };
+  }
+  const { run } = await orchestrator();
+  const problems = run.validateTrustReport(value);
+  return problems.length === 0 ? { status: "ok", report: value as TrustReport } : { status: "invalid", problems };
+}
+
+/** The Trust Report on this machine: read and validated, absent, or not a valid trust-report.json. */
+export async function loadTrustReport(file: string = trustReportFile()): Promise<TrustReportLoad> {
+  if (!existsSync(file)) return { status: "missing" };
+  return readTrustReport(readFileSync(file, "utf8"));
 }
