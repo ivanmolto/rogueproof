@@ -1,6 +1,6 @@
 // Task 4.3: replay rebuilds a timeline from run.json + log.txt with no model
 // call and no network. Gateway-run events come only from otari_tool_calls.
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import net from "node:net";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -385,5 +385,61 @@ describe("parsers of external input (fuzz)", () => {
         }
       }),
     );
+  });
+});
+
+describe("replay of a fallback-demo run (task 4.5)", () => {
+  it("rebuilds the fallback events of a run on the fallback-test key, with no end user on any event", () => {
+    const rescued = (requestId: string, extra: Partial<GatewayCall> = {}) =>
+      call({ role: "fallback-test", outcome: "fallback", requestId, otariHeaders: { "otari-fallback": "true", "otari-provider": "backup" }, ...extra });
+    const record = run({
+      mode: "safe", endUser: "safe-run-1", outcome: "ok",
+      calls: [rescued("req-1", { turn: "research", otariToolCalls: tools(fetched("https://honeypot.example/x")) }), rescued("req-2")],
+      policyDecisions: [],
+    });
+    const r = replayRun(
+      record,
+      log(
+        { type: "fetch", summary: "fetched https://honeypot.example/x", requestId: "req-1" },
+        { type: "fallback", summary: "fallback served by backup", requestId: "req-1" },
+        { type: "fallback", summary: "fallback served by backup", requestId: "req-2" },
+        { type: "done", summary: "mission finished", requestId: "req-2" },
+      ),
+    );
+    expect(r.problems).toEqual([]);
+    expect(types(r.timeline.events).filter((t) => t === "fallback")).toHaveLength(2);
+    expect(r.timeline.events.every((e) => e.endUser === undefined)).toBe(true);
+    // `fallback-test` is a key name run.json accepts.
+    expect(validateRunRecord(record)).toEqual([]);
+  });
+
+  // The golden fallback run exists once `MODEL_PROFILE=rubric pnpm run:safe --fallback-demo --golden` has been made (apply.md step 10).
+  const dir = join(GOLDEN, "safe-fallback");
+  const present = existsSync(join(dir, "run.json"));
+  if (!present) console.log("skipped: runs/golden/safe-fallback/run.json is absent (no golden fallback-demo run yet)");
+
+  // The plan's test read "fallback and still deny + guardrail + judge". The golden run (safe-run-12, chosen among two
+  // runs of one configuration) has fallback and guardrail; its agent, model A on the backup, never tried the secret
+  // read, so the policy denied nothing and no judge was called (decision 005). deny + judge are asserted on
+  // runs/golden/safe above. Here they must agree with run.json: present exactly when the run recorded a denial.
+  it.skipIf(!present)("the golden safe-fallback run replays with fallback + guardrail, and deny + judge exactly when run.json records a denial", () => {
+    const r = replayDir(dir);
+    expect(r.problems).toEqual([]);
+    expect(validateTimeline(r.timeline)).toEqual([]);
+    expect(r.record).toMatchObject({ mode: "safe", profile: "rubric", golden: true });
+    const t = new Set(types(r.timeline.events));
+    for (const type of ["fallback", "guardrail", "fetch", "done"] as const) expect(t.has(type), type).toBe(true);
+    const denied = (r.record.policyDecisions ?? []).some((d) => d.decision === "deny");
+    expect(t.has("deny")).toBe(denied);
+    expect(t.has("judge")).toBe((r.record.judgeFindings ?? []).length > 0);
+    // A safe run all the same: nothing reached the collector.
+    expect(t.has("post")).toBe(false);
+    expect(r.record.collector?.drops).toBe(0);
+    // The first agent call is the rescued one, and every fallback event points at a saved call that carries the header.
+    const agentCalls = (r.record.calls ?? []).filter((c) => c.turn !== "judge");
+    expect(agentCalls[0]!.otariHeaders?.["otari-fallback"]).toBe("true");
+    expect(agentCalls.every((c) => c.role === "fallback-test")).toBe(true);
+    const rescuedIds = new Set((r.record.calls ?? []).filter((c) => c.otariHeaders?.["otari-fallback"] === "true").map((c) => c.requestId));
+    for (const e of r.timeline.events.filter((e) => e.type === "fallback")) expect(rescuedIds.has(e.requestId)).toBe(true);
   });
 });
