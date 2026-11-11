@@ -143,6 +143,16 @@ export function recordedMandate(repoRoot: string): { profile: string; mode: stri
   throw new RunRefused("otari-config/guardrails/injection.json records no mandate profile and mode; --fallback-demo needs them to compare the test workspace against");
 }
 
+/**
+ * Every run on the service key names a new end user, and the key holds at most `maxEndUsers`
+ * (otari-config/keys.json). The gateway refuses the first call of the run after that; it is not
+ * retried. Returns what to do about it, or undefined when the log shows no such refusal (task 6.1).
+ */
+export function endUserLimitHint(logText: string, mode: string): string | undefined {
+  if (!logText.includes("end_user_limit_reached")) return undefined;
+  return `the agent-service key has as many end users as it may have (Max end users, otari-config/keys.json), so the gateway refused a new one. Re-run on an end user that exists (pnpm run:${mode} --n <number of an earlier ${mode} run>), or have the org owner raise Max end users on the key.`;
+}
+
 export async function runCli(mode: CliMode, argv: string[] = process.argv.slice(2)): Promise<number> {
   const { values } = parseArgs({
     args: argv,
@@ -306,6 +316,16 @@ export async function runCli(mode: CliMode, argv: string[] = process.argv.slice(
           : `rubric tries: ${s.tries} of ${MAX_PERMISSIVE_TRIES} (try the other of --agent-model A | B next)`,
       );
     }
+  }
+  if (r.outcome === "error") {
+    let logText = "";
+    try {
+      logText = readFileSync(join(result.runDir, "log.txt"), "utf8");
+    } catch {
+      // No log: no hint.
+    }
+    const hint = endUserLimitHint(logText, mode);
+    if (hint !== undefined) console.log(hint);
   }
   console.log(`output: ${result.runDir}${result.goldenDir ? `\ngolden: ${result.goldenDir}` : ""}`);
   if (mode === "budget") return r.budgetStop ? 0 : 1;
