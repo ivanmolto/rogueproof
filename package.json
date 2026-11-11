@@ -32,6 +32,7 @@
     "run:budget": "pnpm --filter \"@rogueproof/orchestrator...\" build && node packages/orchestrator/dist/runBudget.js",
     "budget:reset": "pnpm --filter \"@rogueproof/orchestrator...\" build && node packages/orchestrator/dist/budgetReset.js",
     "replay": "pnpm --filter \"@rogueproof/orchestrator...\" build && node packages/orchestrator/dist/replay.js",
+    "report": "pnpm --filter \"@rogueproof/orchestrator...\" build && node packages/orchestrator/dist/report.js",
     "sandbox:shell": "pnpm --filter \"@rogueproof/orchestrator...\" build && node packages/orchestrator/dist/sandboxShell.js"
   },
   "devDependencies": {

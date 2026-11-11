@@ -9,6 +9,11 @@ export {
   HONEYPOT_PLACEHOLDER, MIN_BUDGET_USD, AGENT_MAX_TOKENS, fakeEnvPairs, assertControlAllowed, CONTROL_PROVIDER,
 } from "./scenario.js";
 export { trustReportColumn, trustReportColumns, trustColumnLabel, rubricModelsOnly, CONTROL_COLUMN_LABEL } from "./trustColumn.js";
+export {
+  generateTrustReport, assertReportRuns, localComputation, summarizeRun, reportInput, buildProgram, reportMessages, parseComputation, diffComputation,
+  validateTrustReport, renderTrustReport, CLOSING_LINE, REPORT_MAX_TOKENS, RUBRIC_MODES,
+} from "./trustReport.js";
+export type { Computed, ComputedColumn, GenerateResult, GenerateOptions, ReportFailure, ReportInput, RunSummary, SummaryCall } from "./trustReport.js";
 export type { ScenarioOptions, ScenarioResult, ScenarioSandbox } from "./scenario.js";
 export { buildRunRecord, countDropCalls, countMcpCalls, REGISTRY_TOOL, validateRunRecord, redactForGolden, scrub, RunRecordError } from "./record.js";
 export type { RunFacts, KeyRequests, Replacement } from "./record.js";
