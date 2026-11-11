@@ -202,3 +202,32 @@ const STATUS_TEXT: Record<Cards["status"], string> = {
   step_cap: "Stopped at the 40-call cap",
 };
 export const statusText = (s: Cards["status"]): string => STATUS_TEXT[s];
+
+/**
+ * The events that carry the 👍/👎 "was this block correct?" controls (task 5.5):
+ * a tool-policy denial and the judge model's explanation of it.
+ */
+export const FEEDBACK_EVENT_TYPES: readonly TimelineEvent["type"][] = ["deny", "judge"];
+export const hasFeedbackControls = (type: TimelineEvent["type"]): boolean => FEEDBACK_EVENT_TYPES.includes(type);
+
+/**
+ * Why those controls are disabled. Otari's API reference (spec 0.44.0, read
+ * 2026-11-11) documents one feedback endpoint, POST /api/v1/feedback, whose body
+ * is `message` (+ optional `share_email`) and nothing else: a note to the Otari
+ * team, with no rating and no request or trace id, and no way to read it back.
+ * On hosted it also answers 401 "Invalid master key" to a workspace API key and
+ * to a service key (probed the same day with message-less bodies). A verdict on
+ * one event cannot be recorded there, so the dashboard sends nothing.
+ */
+export const FEEDBACK_DISABLED_REASON =
+  "Disabled: Otari's Feedback API (POST /api/v1/feedback) takes a free-text message to the Otari team, with no rating and no request or trace id, and on hosted it refuses a workspace key (401). A verdict cannot be attached to this event. Nothing is sent.";
+
+/**
+ * A `deny` is the tool policy's decision, made in the orchestrator before any call
+ * leaves the machine: the event carries no Otari request id (only the `judge` call
+ * that explains it does), so there would be nothing to rate even with an id field.
+ */
+export const FEEDBACK_DENY_EXTRA = "A deny is also the tool policy's own decision (app-level, in the orchestrator), so it has no Otari request id.";
+
+/** The tooltip for one event's feedback buttons. */
+export const feedbackDisabledReason = (type: TimelineEvent["type"]): string => (type === "deny" ? `${FEEDBACK_DISABLED_REASON} ${FEEDBACK_DENY_EXTRA}` : FEEDBACK_DISABLED_REASON);

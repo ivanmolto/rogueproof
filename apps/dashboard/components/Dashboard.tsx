@@ -4,7 +4,7 @@ import type { TimelineEvent, TimelineEventType } from "@rogueproof/shared";
 import Link from "next/link";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { createSseDecoder } from "../lib/sse";
-import { LIVE_CLIENT_TIMEOUT_MS, MODES, isLiveModeKey, cardsAt, collectorNote, formatT, formatUsd, isFailedOutcome, liveView, parseProfile, profileNote, runKeyFor, statusText, stepDelay, type LiveProfile, type ModeKey, type ReplayView } from "../lib/view";
+import { FEEDBACK_DENY_EXTRA, FEEDBACK_DISABLED_REASON, LIVE_CLIENT_TIMEOUT_MS, MODES, feedbackDisabledReason, hasFeedbackControls, isLiveModeKey, cardsAt, collectorNote, formatT, formatUsd, isFailedOutcome, liveView, parseProfile, profileNote, runKeyFor, statusText, stepDelay, type LiveProfile, type ModeKey, type ReplayView } from "../lib/view";
 
 /** A live run started from this page: going, saved, or without a usable result. */
 type Live = { state: "running"; info: string | null } | { state: "ended" } | { state: "failed"; reason: string };
@@ -69,6 +69,32 @@ function QuietRow({ event }: { event: TimelineEvent }) {
   );
 }
 
+/**
+ * 👍/👎 on a denial and on the judge's explanation, disabled: Otari's feedback endpoint
+ * cannot attach a verdict to a request (see FEEDBACK_DISABLED_REASON). The title sits
+ * on the wrapper as well, because some browsers show no tooltip for a disabled button.
+ */
+function FeedbackButtons({ type }: { type: TimelineEventType }) {
+  const reason = feedbackDisabledReason(type);
+  return (
+    <span data-testid="feedback" title={reason} className="ml-auto inline-flex gap-1">
+      {(["up", "down"] as const).map((v) => (
+        <button
+          key={v}
+          type="button"
+          disabled
+          data-testid={`feedback-${v}`}
+          aria-label={`${v === "up" ? "This block was correct" : "This block was wrong"} (disabled)`}
+          title={reason}
+          className="cursor-not-allowed rounded border border-neutral-300 px-1.5 text-xs opacity-50 grayscale"
+        >
+          {v === "up" ? "👍" : "👎"}
+        </button>
+      ))}
+    </span>
+  );
+}
+
 function EventRow({ event }: { event: TimelineEvent }) {
   return (
     <li data-testid="event" data-type={event.type} className={`rounded px-2 py-1.5 ${event.type === "deny" ? "deny-flash" : ""}`}>
@@ -77,6 +103,7 @@ function EventRow({ event }: { event: TimelineEvent }) {
         <span className={`rounded border px-1.5 text-xs font-medium ${badgeClass(event.type)}`}>{event.type}</span>
         <span className="text-xs text-neutral-500">{SOURCE[event.type]}</span>
         {event.cost !== undefined ? <span className="text-xs tabular-nums text-neutral-500">{formatUsd(event.cost)}</span> : null}
+        {hasFeedbackControls(event.type) ? <FeedbackButtons type={event.type} /> : null}
       </div>
       <div className="mt-0.5 break-words text-sm">{event.summary}</div>
       {event.requestId !== undefined ? <div className="break-all font-mono text-[11px] text-neutral-500">Otari request {event.requestId}</div> : null}
@@ -392,6 +419,12 @@ export default function Dashboard({ liveProfile: initialProfile }: { liveProfile
             )}
             {shown === 0 && live?.state !== "failed" ? <li className="px-2 py-1.5 text-sm text-neutral-500">{running && live.info ? `Starting… ${live.info}` : "Starting…"}</li> : null}
           </ol>
+        ) : null}
+        {/* The same reason as the buttons' tooltip, in plain sight: a tooltip needs a mouse. */}
+        {view && view.events.slice(0, shown).some((e) => hasFeedbackControls(e.type)) ? (
+          <p data-testid="feedback-note" className="mt-2 text-xs text-neutral-600">
+            👍/👎 on deny and judge events: {FEEDBACK_DISABLED_REASON} {FEEDBACK_DENY_EXTRA}
+          </p>
         ) : null}
         {view ? null : (
           <p className="rounded border border-dashed border-neutral-400 p-3 text-sm text-neutral-600">{loading ? "Loading the golden run…" : "Pick a mode and press Replay golden or Run live."}</p>
