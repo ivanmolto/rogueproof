@@ -120,7 +120,25 @@
       "properties": {
         "drops": {
           "type": "integer",
-          "minimum": 0
+          "minimum": 0,
+          "description": "Payloads the collector held after the run (its own list_drops, read by the orchestrator over loopback)."
+        },
+        "dropCalls": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Completed `drop` entries of type mcp in the run's otari_tool_calls arrays."
+        },
+        "crossCheck": {
+          "type": "string",
+          "enum": ["match", "mismatch"],
+          "description": "dropCalls compared with drops. The exfiltration panel shows only on a match with at least one drop."
+        },
+        "fakeSecrets": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Names (never values) of the mission's FAKE .env keys whose value is in a stored payload."
         }
       }
     },

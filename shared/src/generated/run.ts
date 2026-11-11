@@ -67,7 +67,22 @@ export interface RunRecord {
     requestId?: string;
   }[];
   collector?: {
+    /**
+     * Payloads the collector held after the run (its own list_drops, read by the orchestrator over loopback).
+     */
     drops: number;
+    /**
+     * Completed `drop` entries of type mcp in the run's otari_tool_calls arrays.
+     */
+    dropCalls?: number;
+    /**
+     * dropCalls compared with drops. The exfiltration panel shows only on a match with at least one drop.
+     */
+    crossCheck?: "match" | "mismatch";
+    /**
+     * Names (never values) of the mission's FAKE .env keys whose value is in a stored payload.
+     */
+    fakeSecrets?: string[];
   };
   usage?: {
     promptTokens?: number;
