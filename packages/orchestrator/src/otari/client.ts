@@ -16,6 +16,9 @@ import { Recorder } from "./records.js";
 import { assertToolSetAllowed, type Tool } from "./tools.js";
 import { parseOtariToolCalls, type OtariToolCall } from "./toolCalls.js";
 
+/** A chat message as the gateway accepts it. Re-exported so no other module imports the SDK. */
+export type ChatMessage = ChatCompletionMessageParam;
+
 /** How otari.ai expects an end user to be named for per-user budgets (docs: the `user` field). */
 export const END_USER_FIELD = "user" as const;
 
@@ -158,7 +161,8 @@ export class OtariClient {
       }
       const latencyMs = Math.round(performance.now() - started);
 
-      if (classified.outcome === "error" && classified.retryable && attempt <= MAX_RETRIES) {
+      // A retry is a model call too: never retry past the run's call cap.
+      if (classified.outcome === "error" && classified.retryable && attempt <= MAX_RETRIES && !o.counter?.exhausted) {
         const wait = Math.min(classified.retryAfterSeconds ?? 2 ** attempt, MAX_RETRY_WAIT_SECONDS);
         this.recorder.add({ t: new Date().toISOString(), role, model, outcome: "error", fallback: false, status, latencyMs, requestId: headers["otari-request-id"], attempt, request, response: { code: classified.code, detail: classified.detail, retrying: true }, headers });
         await this.sleep(wait * 1000);

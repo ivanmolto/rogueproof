@@ -18,6 +18,17 @@ describe("fixtures", () => {
   });
 });
 
+describe("OtariClient.chat retries and the call cap", () => {
+  it("a retry counts as a model call and is never sent past the cap", async () => {
+    const { client, calls } = make([loadFixture("error", "provider-502"), loadFixture("error", "provider-502"), loadFixture("ok", "hello")]);
+    const counter = new RunCounter(2);
+    const r = await client.chat("agent", hello, { counter });
+    expect(r.outcome).toBe("error");
+    expect(counter.calls).toBe(2);
+    expect(calls).toHaveLength(2);
+  });
+});
+
 describe("OtariClient.chat outcomes", () => {
   it("ok: plain completion with usage, cost and empty otariToolCalls", async () => {
     const { client, calls } = make([loadFixture("ok", "hello")]);
