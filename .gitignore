@@ -16,9 +16,12 @@ pnpm-debug.log*
 !.env.example
 !scenarios/mission/.env
 
-# runs: everything except the redacted golden runs
+# runs: everything except the redacted golden runs and the Trust Report computed from them
+# (task 5.3: the dashboard's /trust-report reads it; it holds counts, costs, model names,
+# request ids and the judge's explanations, no key and no payload)
 runs/*
 !runs/golden/
+!runs/trust-report.json
 
 # third-party repos (read-only, never committed)
 vendor/
