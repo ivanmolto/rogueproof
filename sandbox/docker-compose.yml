@@ -1,0 +1,41 @@
+# The sandbox for the agent's local tools. `pnpm sandbox:check` reads this file
+# (through `docker compose config`) and refuses a run if it gains a network, a
+# mount other than /work, a capability or an environment variable. Change it
+# and the check together, never one alone. See sandbox/README.md.
+name: rogueproof
+
+services:
+  sandbox:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: rogueproof-sandbox:local
+    container_name: rogueproof-sandbox
+
+    # No egress at all: no bridge, no DNS, only loopback. Web fetch, MCP and
+    # code execution happen on Otari's side; the orchestrator, on the host,
+    # is what talks to the gateway.
+    network_mode: none
+
+    # The only mount: the per-run copy of scenarios/mission/, made by the
+    # orchestrator. Never the committed directory, never anything else.
+    volumes:
+      - type: bind
+        source: ${SANDBOX_WORK_DIR:?SANDBOX_WORK_DIR must point at the per-run copy of scenarios/mission}
+        target: /work
+    working_dir: /work
+
+    # The operator's uid, so the bind mount stays writable and host-owned.
+    user: "${SANDBOX_UID:-1000}:${SANDBOX_GID:-1000}"
+
+    read_only: true
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,nodev,size=64m
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    pids_limit: 256
+    mem_limit: 512m
+    init: true
+    command: ["sleep", "infinity"]
