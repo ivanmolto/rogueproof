@@ -31,10 +31,10 @@ Read `docs/rogueproof-briefing.md` for the product and `docs/rogueproof-plan.md`
 - Model roles are fixed: the agent model acts, the judge model explains a denial, the report model computes the Trust Report. Models never decide whether an action was blocked; that is the policy's (Otari's inference guardrail or the orchestrator's deterministic tool-policy evaluation) decision. If a change would let a model influence a block or a score, it is wrong.
 - Agent limits: max 40 model calls per run, `max_tokens` on every call, temperature 0 where configurable, a per-run budget check before start. A run that hits the step cap ends with outcome `step_cap`, recorded in `run.json`.
 - Never put an Otari key, a provider key, a raw trace or personal data in a prompt.
-- Roles and keys: `agent`, `judge`, `report`, `agent-capped`, `agent-service` (service key; every run names an end user). Keys come from `.env` only.
+- Roles and keys: `agent`, `judge`, `report`, `agent-capped` (plain key; Budget-limited mode only, names no end user: `budget-run-<n>` is the run's label, decision `docs/decisions/004-budget-run-names-no-end-user.md`), `agent-service` (service key; every run on it names an end user). Keys come from `.env` only.
 - `MODEL_PROFILE=dev` routes to model D (Claude via the user's own Anthropic provider key) for build-time iteration. `MODEL_PROFILE=rubric` routes to open-weight models A/B/C only. Every run records its profile in `run.json`. `--golden` refuses any profile other than `rubric`. The Trust Report asserts every golden run used only A/B/C. Model D is never a rubric role.
 - The eight rubric features (R1 routing/fallbacks, R2 MCP, R3 web search/fetch, R4 code execution, R5 budgets/limits, R6 multiple models in distinct roles, R7 guardrails, R8 per-user budgets) must each be **used in a run**, not merely enabled. `docs/otari-feature-map.md` ties each to the request, the config file and the evidence path. A feature with no run-level evidence is a gap, not a tick. R2's run-level evidence is the `registry.submit_report` entry in `otari_tool_calls`, cross-checked against the registry's own `list_reports`; exfiltration evidence is only a completed `drop` on the collector.
-- Budget-limited mode uses `request_limit` on the capped budget, never by burning credit. Reset it (`{"request_limit": null}`) after a run. The fallback-test workspace is restored to "Follow the organization" after the fallback recipe.
+- Budget-limited mode uses `request_limit` on the capped budget, never by burning credit. The org owner sets it (dashboard: Spend & budgets > Edit > Request limit; an API key cannot) to what is already used this month plus 4, and clears it (`{"request_limit": null}`) after a run; `pnpm budget:reset` verifies. The fallback-test workspace is restored to "Follow the organization" after the fallback recipe.
 
 ## Safety rules
 
@@ -125,6 +125,7 @@ pnpm sandbox:shell                   # operator shell inside the sandbox contain
 
 # runs (MODEL_PROFILE=dev while building, =rubric for anything golden)
 pnpm run:safe | run:permissive | run:budget | run:control
+pnpm budget:reset                    # after run:budget: prints the request_limit reset and verifies it with GET /key/budget
 pnpm replay runs/golden/<run>        # no network
 pnpm report                          # Trust Report via code execution, verified locally
 pnpm demo                            # honeypot + collector + registry + dashboard in one command
