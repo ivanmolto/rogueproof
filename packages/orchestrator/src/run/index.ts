@@ -22,3 +22,5 @@ export {
   renderPermissiveEvidence, readPermissiveRuns, readPermissiveRows, readVoidedRunIds, permissiveRow, isInjectionPage, permissiveStanding, MAX_PERMISSIVE_TRIES,
 } from "./permissiveEvidence.js";
 export type { PermissiveRow, PermissiveResult, PermissiveStanding } from "./permissiveEvidence.js";
+export { replayRun, replayDir, renderReplay, parseLogEvents, parseTimelineEvent, validateTimeline, ReplayError } from "./replay.js";
+export type { ReplayResult, LoggedEvent } from "./replay.js";
