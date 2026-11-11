@@ -114,8 +114,8 @@ The benign MCP server the mission asks the agent to use (decision
 2. Save. Copy the server's id into `.env` as `REGISTRY_MCP_SERVER_ID` and into
    `mcp/registry.json` as `serverId`, with the date in `registeredOn`. Until
    both are set, every `pnpm run:*` refuses to start.
-3. If the fallback-test workspace is used for task 4.5, register the same
-   server there too, or that run cannot complete the mission's last step.
+3. For task 4.5 the same server is registered in the fallback-test workspace
+   too (step 10), or that run cannot complete the mission's last step.
 
 Verify: the server's health reads healthy and lists one tool; then
 `RUN_OTARI=1 pnpm vitest run packages/orchestrator/src/registrySubmit.otari.test.ts`
@@ -153,9 +153,87 @@ request.
 Verify: Usage → Requests, filtered on `agent-capped`, shows the served requests
 and then the refused one; `run.json.budgetStop` holds the same request id.
 
+## 10. Fallback demo: `rogueproof-fallback-test` mirrors `rogueproof` (task 4.5, `routing/fallback-test.md`)
+
+`pnpm run:safe --fallback-demo` is the Safe scenario on the `fallback-test` key.
+In that workspace the invalid Together key is pinned, so the workspace's own
+`agent-primary` policy rescues every agent call on its first backup and the
+gateway answers `Otari-Fallback: true`. For the run to show the same Safe-mode
+events as a run in `rogueproof`, the test workspace needs the same guardrail,
+web tools and MCP servers. Workspace settings are per workspace; none of this is
+inherited.
+
+Once, by hand:
+
+1. **Guardrail.** Organization → Guardrails → the `lakera-guard` mandate → pencil
+   → Runs in: add `rogueproof-fallback-test` next to `rogueproof`, same mode
+   (Monitor). Then move the workspace from `notIn` to `workspaces` in
+   `guardrails/injection.json`.
+2. **Web search.** Workspace `rogueproof-fallback-test` → Tools → Web search →
+   **Allow in rogueproof-fallback-test** on, the rest as in step 1.
+3. **MCP servers.** In `rogueproof-fallback-test`, repeat steps 7 and 8 exactly:
+   names `collector` and `registry`, the same URLs and bearers, allow-lists `drop`
+   and `submit_report`. Each gets a new id. Paste them into `.env` as
+   `FALLBACK_TEST_COLLECTOR_MCP_SERVER_ID` and `FALLBACK_TEST_REGISTRY_MCP_SERVER_ID`
+   and into `mcp/collector.json` and `mcp/registry.json` under
+   `otherWorkspaces.rogueproof-fallback-test.serverId`. The run refuses to start
+   until the two places agree.
+4. **Routing.** The workspace's own `agent-primary` (already there since task 1.2,
+   identical to `routing/agent-primary.json`).
+
+Around every run:
+
+5. Pin the invalid key: `routing/fallback-test.md` step 1.
+6. `MODEL_PROFILE=rubric pnpm run:safe --fallback-demo` (add `--golden` for the
+   redacted copy in `runs/golden/safe-fallback/`). It takes no `--agent-model`: a
+   selector sent directly has no policy and nothing to fall back to. The key is a
+   plain key, so no end user is named and `safe-run-<n>` is the run's label
+   (decision `docs/decisions/005-fallback-demo-run.md`). Judge calls stay on the
+   `judge` key in `rogueproof`.
+7. Restore: `routing/fallback-test.md` step 4 (**Reset**). The command prints the
+   reminder when it ends, also after a refused or failed run.
+
+**The mirror check.** A workspace API key cannot read workspace settings, so
+before the run copies the mission the orchestrator sends up to four small
+requests on the `fallback-test` key (`max_tokens` 16, about $0.0001 in all) and
+reads what the gateway answers, never the model's text. Any finding that fails
+refuses the run. The findings are written to the run's `log.txt` as
+`mirror check` lines; the probes are kept in `preflight.records.jsonl` and are
+not among the run's calls.
+
+| Mirrors | Request | Passes when |
+|---|---|---|
+| Web search allowed | research tool set (`otari_web_fetch` + `otari_web_search`) | the gateway serves it (with Allow off it answers 403 `web_access_disabled`, "web access is not enabled for this workspace"; seen 2026-11-11) |
+| Invalid key pinned | the same request, repeated up to 3 times 4 s apart (the pin takes a few seconds) | `Otari-Fallback: true` |
+| Mandated guardrail | the same response | `Otari-Guardrails` names the profile and mode recorded in `guardrails/injection.json` |
+| Collector and registry registered | act tool set + both `mcp_server_ids` | the gateway serves it (an id the workspace does not know is a 404, never retried) |
+
+What the check cannot see: a served request proves the workspace allows the
+tools and knows the servers, not that a fetch works or that an allow-list is right. Those show in the
+run itself (`fetch backed by otari_tool_calls`, the registry cross-check) and in
+the dashboard verifications of steps 1, 7 and 8.
+
+**Recorded check (2026-11-11, before the golden run `safe-run-12`).** All four
+findings passed, 2 gateway calls, $0.000090:
+
+| Finding | What the gateway answered |
+|---|---|
+| Web search allowed | served, request `f38c1817-408a-4022-a2ea-177bc6e942c4` |
+| Invalid key pinned | `Otari-Fallback: true`, attempt 2, served by `fireworks` (on the first call; no wait was needed) |
+| Mandated guardrail | `Otari-Guardrails` names `lakera-guard`, mode `monitor` |
+| Collector and registry registered | served, request `bfc050ce-18ac-4f91-986e-18c3bf021be1` |
+
+The run that followed: 5 agent calls, every one rescued on Fireworks, $0.0697,
+`runs/golden/safe-fallback/`. An earlier run the same evening passed the same
+check and then ended on its first request with HTTP 422 "Web Retrieval is
+limited to 10 calls per request"; that request was billed.
+
+Verify: the run prints `RESCUED BY FALLBACK`, `pnpm replay` on its directory
+shows `fallback` events, and Usage → Requests in the test workspace lists each
+rescued request as two rows (Together **Absorbed**, then the backup).
+
 ## Still to come
 
 | Step | File | Task |
 |---|---|---|
-| Fallback test workspace `rogueproof-fallback-test` | `routing/fallback-test.md` | 1.2 |
 | Code execution tool | `tools/code-execution.json` | 5.1 |

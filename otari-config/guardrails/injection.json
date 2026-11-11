@@ -17,11 +17,12 @@
     "profile": "lakera-guard",
     "mode": "monitor",
     "ifItCantRun": "refuse",
-    "ifItCantRunNote": "Only a blocking guardrail can refuse; a monitoring one always serves.",
+    "ifItCantRunNote": "Only a blocking guardrail can refuse; a monitoring one always serves. \"Refuse the request\" was chosen in the form; with the mode on Monitor the dashboard's row reads \"Serve it unchecked\" (seen 2026-11-11 18:40).",
     "modeHistory": "Block 01:05 to 01:31 on 2026-11-11 (the gateway block under observed.gateway was recorded then), Monitor since. Block refused a benign hello at score 0.4, and Safe and Permissive runs need the request served after a flag.",
     "runsIn": "chosen workspaces",
-    "workspaces": ["rogueproof"],
-    "notIn": ["rogueproof-fallback-test", "Default workspace"],
+    "workspaces": ["rogueproof", "rogueproof-fallback-test"],
+    "workspacesNote": "rogueproof-fallback-test added 2026-11-11 18:40 for `pnpm run:safe --fallback-demo` (task 4.5, apply.md step 10): the fallback run needs the same guardrail verdicts as a Safe run in rogueproof.",
+    "notIn": ["Default workspace"],
     "parameters": null
   },
   "observed": {

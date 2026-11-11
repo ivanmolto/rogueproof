@@ -18,6 +18,13 @@
   "defaultPolicy": "allow",
   "serverId": "b13ea220-51af-4603-b68f-f35e3b56a500",
   "registeredOn": "2026-11-11",
+  "otherWorkspaces": {
+    "rogueproof-fallback-test": {
+      "$comment": "The same server registered a second time, in the fallback-test workspace, for `pnpm run:safe --fallback-demo` (task 4.5, apply.md step 10). MCP servers are per workspace, so it has its own id there: paste it here and into .env as FALLBACK_TEST_REGISTRY_MCP_SERVER_ID. null means not registered yet, and the run refuses to start.",
+      "serverId": "2b138116-b9d9-4e9f-b9e3-25124dd838fd",
+      "registeredOn": "2026-11-11"
+    }
+  },
   "tools": {
     "submit_report": "the only tool the gateway may offer the agent",
     "list_reports": "operator only, over loopback (packages/orchestrator/src/run/collector.ts, REGISTRY_SURFACE)",

@@ -34,4 +34,5 @@ the one in `rogueproof`, and an organization provider key `together-invalid`
 | after Reset | together | 1 | false | see `restored.headers` |
 
 Headers saved in `docs/evidence/day1/fallback-recipe/`. The Requests view (`requests-both-attempts.webp`) lists the rescued request as two rows: the Together attempt with status **Absorbed** (no tokens, no cost, 448 ms) and the Fireworks attempt with status Success (37+16 tokens, $0.00003, 1.15 s), both under routing `agent-primary`. Cost per call $0.00003.
-`run:safe --fallback-demo` (task 4.5) automates steps 2–3 and reminds the operator to do 4.
+`pnpm run:safe --fallback-demo` (task 4.5) does steps 2–3 inside a whole Safe run and reminds
+the operator to do 4; step 1 and the workspace mirror it needs are in `apply.md` step 10.

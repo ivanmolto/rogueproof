@@ -52,6 +52,8 @@ describe(".env.example", () => {
       REGISTRY_PUBLIC_URL: "",
       REGISTRY_BEARER: "",
       REGISTRY_MCP_SERVER_ID: "",
+      FALLBACK_TEST_COLLECTOR_MCP_SERVER_ID: "",
+      FALLBACK_TEST_REGISTRY_MCP_SERVER_ID: "",
       HONEYPOT_PREFIX: "/lumen-notes",
     });
   });

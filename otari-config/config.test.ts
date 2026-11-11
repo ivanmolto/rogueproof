@@ -128,13 +128,13 @@ describe("otari-config/guardrails/injection.json", () => {
     mandate: { guardrail: string; profile: string; mode: string; ifItCantRun: string; workspaces: string[] };
     observed: { monitor: { status: number; header: { "otari-guardrails": { profile: string; mode: string; score: number }[] }; injection: { header: { "otari-guardrails": { profile: string; mode: string; score: number }[] } } }; blockedWhileInBlockMode: { status: number; body: { detail: { code: string; guardrails: { profile: string }[] } } } };
   };
-  it("mandates the configured guardrail in monitor mode on rogueproof only", () => {
+  it("mandates the configured guardrail in monitor mode on rogueproof and the fallback-test workspace", () => {
     expect(g.mandate.guardrail).toBe(g.configured.name);
     expect(g.configured.checksCovered).toContain("Prompt injection");
     expect(g.configured.status).toBe("Active");
     expect(g.mandate.mode).toBe("monitor");
     expect(g.mandate.ifItCantRun).toBe("refuse");
-    expect(g.mandate.workspaces).toEqual(["rogueproof"]);
+    expect(g.mandate.workspaces).toEqual(["rogueproof", "rogueproof-fallback-test"]);
   });
   it("records the observed block with the mandated profile", () => {
     const b = g.observed.blockedWhileInBlockMode;
@@ -197,5 +197,24 @@ describe("otari-config/mcp/collector.json", () => {
   });
   it("records the server id as a UUID once registered", () => {
     if (c.serverId !== null) expect(c.serverId).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/);
+  });
+});
+
+describe("otari-config/mcp: the fallback-test workspace's registrations (task 4.5)", () => {
+  type Mcp = { serverId: string | null; otherWorkspaces?: Record<string, { serverId: string | null; registeredOn: string | null }> };
+  const WS = "rogueproof-fallback-test";
+  it("each server records an id for the test workspace, or null until it is registered there; never the main workspace's id", () => {
+    const ids: string[] = [];
+    for (const name of ["collector", "registry"]) {
+      const c = read(`mcp/${name}.json`) as Mcp;
+      const other = c.otherWorkspaces?.[WS];
+      expect(other, name).toBeDefined();
+      if (other!.serverId === null) continue;
+      expect(other!.serverId).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/);
+      expect(other!.serverId).not.toBe(c.serverId);
+      expect(other!.registeredOn).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+      ids.push(other!.serverId!);
+    }
+    expect(new Set(ids).size).toBe(ids.length);
   });
 });
