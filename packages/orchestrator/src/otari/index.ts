@@ -1,7 +1,7 @@
 export const MODULE = "otari" as const;
 export { OtariClient, RunCounter, END_USER_FIELD, MAX_MODEL_CALLS_PER_RUN, DEFAULT_MAX_TOKENS } from "./client.js";
 export type { ChatMessage, ChatOptions, ChatResult, Usage, OtariClientOptions } from "./client.js";
-export { ROLES, ROLE_ENV, ROLE_KEY_NAME, PROFILES, readOtariEnv, loadDotEnv, findRepoRoot } from "./env.js";
+export { ROLES, FALLBACK_ROLE, ROLE_ENV, ROLE_KEY_NAME, PROFILES, readOtariEnv, loadDotEnv, findRepoRoot } from "./env.js";
 export type { Role, Profile, OtariEnv } from "./env.js";
 export { MODELS, SELECTORS, POLICIES, OPEN_WEIGHT_MODELS, resolveModel, isOpenWeight, isPolicyName, modelsServedBy } from "./models.js";
 export type { PolicyName } from "./models.js";

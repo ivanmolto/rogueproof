@@ -19,6 +19,12 @@ describe("readOtariEnv", () => {
     expect(readOtariEnv(e).profile).toBe("dev");
     expect(() => readOtariEnv({ ...full(), MODEL_PROFILE: "golden" })).toThrow(/MODEL_PROFILE/);
   });
+  it("reads the fallback-test key when it is set, and does not require it", () => {
+    expect(readOtariEnv(full()).keys.fallback).toBeUndefined();
+    const env = readOtariEnv({ ...full(), [ROLE_ENV.fallback]: "fake-fallback" });
+    expect(env.keys.fallback).toBe("fake-fallback");
+    expect((ROLES as readonly string[]).includes("fallback")).toBe(false);
+  });
   it("names the missing variable without printing any value", () => {
     const e = full();
     delete e["OTARI_API_KEY_JUDGE"];

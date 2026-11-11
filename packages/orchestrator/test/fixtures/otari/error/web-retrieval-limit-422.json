@@ -1,0 +1,11 @@
+{
+  "$comment": "Synthetic Otari fixture: real field names, fake ids/costs/models. Shape seen live 2026-11-11 (task 4.5, first fallback-demo run): a research request (otari_web_fetch + otari_web_search) in which the model asked for more than 10 web retrievals. The gateway refuses the whole request after running them: {detail} only, no code, no Otari-Error-Code, Otari-Provider or Otari-Fallback header.",
+  "status": 422,
+  "headers": {
+    "content-type": "application/json",
+    "otari-request-id": "req_fake_0010"
+  },
+  "body": {
+    "detail": "Web Retrieval is limited to 10 calls per request"
+  }
+}

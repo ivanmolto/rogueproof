@@ -8,7 +8,7 @@ import type {
   ChatCompletionMessageParam,
   ChatCompletionTool,
 } from "openai/resources/chat/completions";
-import { ROLES, type OtariEnv, type Role } from "./env.js";
+import { FALLBACK_ROLE, ROLES, ROLE_ENV, type OtariEnv, type Role } from "./env.js";
 import { resolveModel } from "./models.js";
 import { classifyError, classifySuccess, classifyTransportError, type Classified, type Outcome } from "./outcome.js";
 import { pickResponseHeaders } from "./redact.js";
@@ -85,7 +85,7 @@ type ChatBody = ChatCompletion & { otari_tool_calls?: unknown; usage?: ChatCompl
 
 export class OtariClient {
   readonly recorder: Recorder;
-  private readonly clients: Record<Role, OpenAI>;
+  private readonly clients: Partial<Record<Role, OpenAI>>;
   private readonly env: OtariEnv;
   private readonly sleep: (ms: number) => Promise<void>;
 
@@ -94,7 +94,14 @@ export class OtariClient {
     this.recorder = new Recorder(opts.recordFile);
     this.sleep = opts.sleep ?? ((ms) => new Promise((r) => setTimeout(r, ms)));
     const base = { baseURL: opts.env.baseURL, maxRetries: 0, ...(opts.fetch ? { fetch: opts.fetch } : {}) };
-    this.clients = Object.fromEntries(ROLES.map((r) => [r, new OpenAI({ ...base, apiKey: opts.env.keys[r] })])) as Record<Role, OpenAI>;
+    this.clients = Object.fromEntries(ROLES.map((r) => [r, new OpenAI({ ...base, apiKey: opts.env.keys[r] })]));
+    const fallbackKey = opts.env.keys[FALLBACK_ROLE];
+    if (fallbackKey) this.clients[FALLBACK_ROLE] = new OpenAI({ ...base, apiKey: fallbackKey });
+  }
+
+  /** True when the role has a key: every role but the optional fallback-test one always does. */
+  hasKey(role: Role): boolean {
+    return this.clients[role] !== undefined;
   }
 
   get profile(): OtariEnv["profile"] {
@@ -124,6 +131,8 @@ export class OtariClient {
   async chat(role: Role, messages: ChatCompletionMessageParam[], o: ChatOptions = {}): Promise<ChatResult> {
     const request = this.buildRequest(role, messages, o);
     const model = request.model;
+    const sdk = this.clients[role];
+    if (!sdk) throw new Error(`${ROLE_ENV[role]} is not set (role "${role}")`);
     const empty: Usage = { promptTokens: 0, completionTokens: 0, totalTokens: 0 };
 
     if (o.counter?.exhausted) {
@@ -143,7 +152,7 @@ export class OtariClient {
       let body: ChatBody | undefined;
       let status: number | undefined;
       try {
-        const { data, response } = await this.clients[role].chat.completions
+        const { data, response } = await sdk.chat.completions
           .create(request, o.signal ? { signal: o.signal } : {})
           .withResponse();
         status = response.status;

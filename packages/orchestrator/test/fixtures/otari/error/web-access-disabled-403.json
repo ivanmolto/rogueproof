@@ -1,0 +1,13 @@
+{
+  "$comment": "Synthetic Otari fixture: real field names, fake ids/costs/models. Shape seen live 2026-11-11 (task 4.5): a request carrying otari_web_fetch in a workspace where Tools > Web search > Allow is off. The header and the body both carry the code; no Otari-Guardrails header on the refusal.",
+  "status": 403,
+  "headers": {
+    "content-type": "application/json",
+    "otari-request-id": "req_fake_0009",
+    "otari-error-code": "web_access_disabled"
+  },
+  "body": {
+    "detail": "web access is not enabled for this workspace",
+    "code": "web_access_disabled"
+  }
+}

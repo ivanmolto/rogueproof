@@ -63,3 +63,8 @@ export const FAKE_ENV = {
     service: ["otk", "v1", "eu", "FAKEservicekey0000"].join("_"),
   },
 };
+/** FAKE_ENV plus the optional key of the fallback-test workspace (task 4.5). */
+export const FAKE_ENV_FALLBACK = {
+  ...FAKE_ENV,
+  keys: { ...FAKE_ENV.keys, fallback: ["otk", "v1", "eu", "FAKEfallbackkey000"].join("_") },
+};

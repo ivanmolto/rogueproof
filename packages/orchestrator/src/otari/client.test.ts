@@ -1,6 +1,6 @@
 import { OUTCOMES } from "@rogueproof/shared";
 import { describe, expect, it } from "vitest";
-import { FAKE_ENV, fakeFetch, listFixtures, loadFixture } from "../../test/fixtures.js";
+import { FAKE_ENV, FAKE_ENV_FALLBACK, fakeFetch, listFixtures, loadFixture } from "../../test/fixtures.js";
 import { END_USER_FIELD, OtariClient, RunCounter } from "./client.js";
 import { ToolSetError } from "./tools.js";
 
@@ -26,6 +26,24 @@ describe("OtariClient.chat retries and the call cap", () => {
     expect(r.outcome).toBe("error");
     expect(counter.calls).toBe(2);
     expect(calls).toHaveLength(2);
+  });
+});
+
+describe("the optional fallback-test key", () => {
+  it("refuses to send on the fallback role without a key, naming the variable and sending nothing", async () => {
+    const { client, calls } = make([loadFixture("ok", "hello")]);
+    expect(client.hasKey("fallback")).toBe(false);
+    await expect(client.chat("fallback", hello)).rejects.toThrow(/OTARI_API_KEY_FALLBACK_TEST is not set/);
+    expect(calls).toHaveLength(0);
+  });
+  it("sends the routing policy on the fallback key, and never an end user", async () => {
+    const ff = fakeFetch([loadFixture("fallback", "rescued")]);
+    const client = new OtariClient({ env: FAKE_ENV_FALLBACK, fetch: ff.fetch, sleep: noSleep });
+    const r = await client.chat("fallback", hello);
+    expect(r.outcome).toBe("fallback");
+    expect(ff.calls[0]!.headers["authorization"]).toBe(`Bearer ${FAKE_ENV_FALLBACK.keys.fallback}`);
+    expect((ff.calls[0]!.body as { model: string }).model).toBe("agent-primary");
+    expect(() => client.buildRequest("fallback", hello, { endUser: "safe-run-1" })).toThrow(/service role/);
   });
 });
 
@@ -121,6 +139,25 @@ describe("OtariClient.chat outcomes", () => {
       expect(r.error?.detail).toMatch(/MCP server/);
       expect(calls).toHaveLength(1);
     }
+  });
+
+  it("error: 403 web_access_disabled (web search not allowed in the workspace) is not retried", async () => {
+    const { client, calls } = make([loadFixture("error", "web-access-disabled-403"), loadFixture("ok", "hello")]);
+    const r = await client.chat("agent", hello, { tools: [{ type: "otari_web_fetch" }] });
+    expect(r.outcome).toBe("error");
+    expect(r.status).toBe(403);
+    expect(r.error).toEqual({ code: "web_access_disabled", detail: "web access is not enabled for this workspace" });
+    expect(calls).toHaveLength(1);
+  });
+
+  it("error: 422 web retrieval limit (more than 10 fetches in one request) is not retried and carries no fallback", async () => {
+    const { client, calls } = make([loadFixture("error", "web-retrieval-limit-422"), loadFixture("ok", "hello")]);
+    const r = await client.chat("agent", hello, { tools: [{ type: "otari_web_fetch" }] });
+    expect(r.outcome).toBe("error");
+    expect(r.status).toBe(422);
+    expect(r.fallback).toBe(false);
+    expect(r.error).toEqual({ code: undefined, detail: "Web Retrieval is limited to 10 calls per request" });
+    expect(calls).toHaveLength(1);
   });
 
   it("error: 424 provider_not_configured is not retried", async () => {

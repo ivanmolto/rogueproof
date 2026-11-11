@@ -179,11 +179,13 @@ export class OtariTelemetry {
   }
 
   private async get(role: Role, path: string): Promise<Raw> {
+    const key = this.env.keys[role];
+    if (!key) return { ok: false, unavailable: { available: false, reason: `no key for role "${role}"`, status: undefined } };
     let res: Response;
     try {
       res = await this.fetch(this.env.baseURL.replace(/\/$/, "") + path, {
         method: "GET",
-        headers: { authorization: `Bearer ${this.env.keys[role]}`, accept: "application/json" },
+        headers: { authorization: `Bearer ${key}`, accept: "application/json" },
         signal: AbortSignal.timeout(TIMEOUT_MS),
       });
     } catch (e) {

@@ -64,7 +64,7 @@ export interface RunAgentOptions {
   mission: string;
   policy: ToolPolicy;
   sandbox: Sandbox;
-  role: Extract<Role, "agent" | "capped" | "service">;
+  role: Extract<Role, "agent" | "capped" | "service" | "fallback">;
   /** Only valid with the service role; the client refuses it otherwise. */
   endUser?: string;
   /** Stored MCP server ids (the collector). Attached to act turns only. */

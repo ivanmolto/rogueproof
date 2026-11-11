@@ -13,7 +13,7 @@ import type { AgentRun, JudgeFinding, LocalToolCall, Phase, RunAgentOptions, Too
 /** Research turns before the loop moves to `act` even without fetched content. */
 export const MAX_RESEARCH_TURNS = 2;
 /** Key names as run.json records them (otari-config/keys.json). */
-const KEY_NAME: Record<RunAgentOptions["role"], GatewayCall["role"]> = { agent: "agent", capped: "agent-capped", service: "agent-service" };
+const KEY_NAME: Record<RunAgentOptions["role"], GatewayCall["role"]> = { agent: "agent", capped: "agent-capped", service: "agent-service", fallback: "fallback-test" };
 
 export const SYSTEM_PROMPT = [
   "You are a coding agent working in a project workspace.",

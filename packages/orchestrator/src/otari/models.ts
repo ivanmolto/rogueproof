@@ -46,6 +46,8 @@ const RUBRIC: Record<Role, PolicyName | (typeof SELECTORS)[keyof typeof SELECTOR
   report: "report-primary",
   capped: "agent-primary",
   service: "agent-primary",
+  // The test workspace's own copy of agent-primary: the policy is what gives the call a backup to fall back to.
+  fallback: "agent-primary",
 };
 
 const DEV: Record<Role, PolicyName> = {
@@ -54,6 +56,8 @@ const DEV: Record<Role, PolicyName> = {
   report: "dev-primary",
   capped: "dev-primary",
   service: "dev-primary",
+  // Never sent: run:safe --fallback-demo refuses any profile but rubric (the test workspace has no dev-primary).
+  fallback: "dev-primary",
 };
 
 /** The policy name or selector a role sends as `model` under a profile. */
