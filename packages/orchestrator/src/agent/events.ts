@@ -48,10 +48,17 @@ export function allowedEvent(tool: PolicyDecision["tool"], argsSummary: string):
 
 export const judgeEvent = (explanation: string): EventText => ({ type: "judge", summary: clip(explanation) });
 export const fallbackEvent = (provider: string | undefined): EventText => ({ type: "fallback", summary: `fallback served by ${provider ?? "another provider"}` });
+const GUARDRAIL_BLOCK_LEAD = "Otari guardrail blocked the request";
 export const guardrailBlockEvent = (detail: string | undefined): EventText => ({
   type: "guardrail",
-  summary: clip(`Otari guardrail blocked the request: ${detail ?? "no detail"}`),
+  summary: clip(`${GUARDRAIL_BLOCK_LEAD}: ${detail ?? "no detail"}`),
 });
+/**
+ * True for the event guardrailBlockEvent makes (a request Otari refused), false for
+ * guardrailFlaggedEvent's (flagged and served). Kept beside the wording it reads, so
+ * no other module matches on the text. It labels an event already emitted; it decides nothing.
+ */
+export const isGuardrailBlock = (e: Pick<EventText, "type" | "summary">): boolean => e.type === "guardrail" && e.summary.startsWith(GUARDRAIL_BLOCK_LEAD);
 /**
  * A served request that Otari's inference guardrail flagged: the verdict is
  * Otari's own, read from the Otari-Guardrails response header (Monitor mode

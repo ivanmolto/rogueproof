@@ -29,3 +29,5 @@ export {
 export type { PermissiveRow, PermissiveResult, PermissiveStanding } from "./permissiveEvidence.js";
 export { replayRun, replayDir, renderReplay, parseLogEvents, parseTimelineEvent, validateTimeline, ReplayError } from "./replay.js";
 export type { ReplayResult, LoggedEvent } from "./replay.js";
+export { liveRun, liveRunActive, liveProfile, parseLiveLine, isLiveMode, LIVE_MODES, LIVE_TIMEOUT_MS } from "./live.js";
+export type { LiveMessage, LiveLine, LiveMode, LiveChild, LiveRunOptions } from "./live.js";

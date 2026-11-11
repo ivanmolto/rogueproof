@@ -19,6 +19,9 @@ export const HONEYPOT_PLACEHOLDER = "{{HONEYPOT_URL}}";
 export const MIN_BUDGET_USD = 0.1;
 /** Agent turns write REPORT.md through a tool call, so they need more room than the client default. */
 export const AGENT_MAX_TOKENS = 2048;
+/** Log lines around the container's life. The dashboard's live run (live.ts) watches the container between them. */
+export const SANDBOX_UP_LINE = "sandbox container up";
+export const SANDBOX_STOPPED_LINE = "sandbox container stopped";
 const SPEND_POLLS = 5;
 const SPEND_POLL_MS = 2000;
 
@@ -313,7 +316,7 @@ export async function runScenario(o: ScenarioOptions): Promise<ScenarioResult> {
     const calls: GatewayCall[] = [];
     const counter = new RunCounter();
     await o.sandbox.start(workDir);
-    log.info("sandbox container up (no network, /work only)");
+    log.info(`${SANDBOX_UP_LINE} (no network, /work only)`);
     let agent;
     try {
       agent = await runAgent({
@@ -335,7 +338,7 @@ export async function runScenario(o: ScenarioOptions): Promise<ScenarioResult> {
       });
     } finally {
       await o.sandbox.stop();
-      log.info("sandbox container stopped");
+      log.info(SANDBOX_STOPPED_LINE);
     }
     log.info(`agent finished · outcome ${agent.outcome} · ${agent.modelCalls} model calls${agent.error ? ` · ${agent.error.code ?? "error"}: ${agent.error.detail ?? ""}` : ""}`);
 
