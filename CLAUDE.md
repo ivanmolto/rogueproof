@@ -9,7 +9,7 @@ Read `docs/rogueproof-briefing.md` for the product and `docs/rogueproof-plan.md`
 ## Repository
 
 - Monorepo, pnpm workspaces, Node 22 or later, TypeScript strict, ESM (`NodeNext`). Python only where the Otari CLI or SDK requires it.
-- Packages: `apps/dashboard` (Next.js), `packages/orchestrator` (runs the agent loop and the scenarios, executes local tools in the sandbox, collects traces and usage), `scenarios/` (`honeypot/`, `collector/`, `registry/`, `mission/` — reusable attack fixtures, **no Otari imports**), `otari-config/` (workspace as code: routing, guardrails, budgets, MCP registration, `apply.md`), `policies/` (`safe/`, `permissive/` — deterministic tool-policy rules evaluated by the orchestrator), `sandbox/` (Dockerfile, compose), `runs/` (gitignored except `runs/golden/`), `docs/`.
+- Packages: `apps/dashboard` (Next.js), `packages/orchestrator` (runs the agent loop and the scenarios, executes local tools in the sandbox, collects traces and usage), `scenarios/` (`honeypot/`, `collector/`, `registry/`, `mission/` — reusable attack fixtures, **no Otari imports**), `otari-config/` (workspace as code: routing, guardrails, budgets, MCP registration, `apply.md`), `policies/` (`safe/`, `permissive/` — deterministic tool-policy rules evaluated by the orchestrator), `sandbox/` (Dockerfile, compose), `runs/` (gitignored except `runs/golden/` and `runs/trust-report.json`), `docs/`.
 - Shared types: the `Timeline` event schema, `run.json` schema and `trust-report.json` schema live as JSON Schema in `shared/` and are generated into TypeScript (`pnpm gen:schemas`). Never hand-edit generated files; CI fails if they drift.
 - Status line in the README: "hackathon build, Otari <pinned version>, built <date>".
 - Third-party repos go under `vendor/` (gitignored) and are read-only.
@@ -67,7 +67,7 @@ Read `docs/rogueproof-briefing.md` for the product and `docs/rogueproof-plan.md`
 
 - Small modules, typed interfaces, tests next to code. TypeScript: vitest, eslint, strict mode. Python (only if the Otari CLI forces it): `uv`, pytest, ruff, mypy strict.
 - vitest. Every task adds tests; `pnpm test` must pass before a task is reported done.
-- Unit tests run offline. Otari is mocked with synthetic fixtures in `packages/orchestrator/test/fixtures/otari/<outcome>/*.json`: same structure and field names as real responses (every outcome above, `Otari-*` headers included) but fake ids, costs and model names, so every branch can be tested. Real recordings stay out of git (gitignored `runs/` except `runs/golden/`, whose `run.json` files are redacted before saving).
+- Unit tests run offline. Otari is mocked with synthetic fixtures in `packages/orchestrator/test/fixtures/otari/<outcome>/*.json`: same structure and field names as real responses (every outcome above, `Otari-*` headers included) but fake ids, costs and model names, so every branch can be tested. Real recordings stay out of git (gitignored `runs/` except `runs/golden/`, whose `run.json` files are redacted before saving). `runs/trust-report.json` is tracked too: it is what `pnpm report` computed from the golden runs (plus the labelled control column) and what the dashboard's `/trust-report` shows; re-run `pnpm report` after re-recording a golden run, a test fails when its run ids drift from `runs/golden/`.
 - Tests that need the live gateway are tagged `otari` and skipped in CI by default (`describe.skipIf(!process.env.RUN_OTARI)`). Tests that need Docker are tagged `sandbox`.
 - CI runs lint, type-check and unit tests on every push; generated schema files must not drift.
 - `pnpm replay runs/golden/*` must pass with the network disabled at the end of every task from Day 4 onward.
@@ -127,7 +127,7 @@ pnpm sandbox:shell                   # operator shell inside the sandbox contain
 pnpm run:safe | run:permissive | run:budget | run:control
 pnpm budget:reset                    # after run:budget: prints the request_limit reset and verifies it with GET /key/budget
 pnpm replay runs/golden/<run>        # no network
-pnpm report                          # Trust Report via code execution, verified locally
+pnpm report                          # Trust Report via code execution, verified locally; rewrites the tracked runs/trust-report.json
 pnpm demo                            # honeypot + collector + registry + dashboard in one command
 
 # dashboard
