@@ -1,0 +1,16 @@
+@import "tailwindcss";
+
+/* Red is reserved for a denied action and the exfiltration panel. */
+@keyframes deny-flash {
+  from {
+    background-color: #dc2626;
+    color: #ffffff;
+  }
+  to {
+    background-color: transparent;
+  }
+}
+
+.deny-flash {
+  animation: deny-flash 600ms ease-out 1;
+}

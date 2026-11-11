@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
+import "./globals.css";
 
 export const metadata: Metadata = {
   title: "RogueProof — Scenario 1: Agent Zero",
@@ -25,7 +26,7 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="en">
-      <body style={{ fontFamily: "system-ui, sans-serif", margin: "0 auto", maxWidth: 960, padding: 16 }}>
+      <body className="mx-auto max-w-4xl bg-white px-4 py-4 font-sans text-neutral-900 antialiased">
         {children}
       </body>
     </html>
