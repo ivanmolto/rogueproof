@@ -64,6 +64,9 @@ importers:
       '@rogueproof/scenario-collector':
         specifier: workspace:*
         version: link:../../scenarios/collector
+      '@rogueproof/scenario-registry':
+        specifier: workspace:*
+        version: link:../../scenarios/registry
       '@rogueproof/testing':
         specifier: workspace:*
         version: link:../testing
@@ -84,6 +87,12 @@ importers:
         version: 4.10.2
 
   scenarios/honeypot:
+    devDependencies:
+      fast-check:
+        specifier: 4.10.2
+        version: 4.10.2
+
+  scenarios/registry:
     devDependencies:
       fast-check:
         specifier: 4.10.2

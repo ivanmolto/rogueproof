@@ -22,6 +22,7 @@
   },
   "devDependencies": {
     "@rogueproof/scenario-collector": "workspace:*",
+    "@rogueproof/scenario-registry": "workspace:*",
     "@rogueproof/testing": "workspace:*",
     "fast-check": "4.10.2"
   }

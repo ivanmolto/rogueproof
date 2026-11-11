@@ -49,6 +49,7 @@ describe("eslint import boundaries", () => {
     "packages/orchestrator/src/index.ts",
     "apps/dashboard/app/page.tsx",
     "scenarios/collector/src/index.ts",
+    "scenarios/registry/src/index.ts",
     "shared/src/index.ts",
   ])("refuses the OpenAI SDK and the Otari host in %s", async (file) => {
     expect(await lint(importOpenai, file)).toContain("no-restricted-imports");
