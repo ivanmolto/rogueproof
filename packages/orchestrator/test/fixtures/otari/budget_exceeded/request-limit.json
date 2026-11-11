@@ -10,6 +10,6 @@
   },
   "body": {
     "code": "budget_exceeded",
-    "detail": "request_limit reached for this budget"
+    "detail": "API key has exceeded request limit"
   }
 }

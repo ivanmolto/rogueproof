@@ -112,12 +112,40 @@ export interface RunRecord {
     endUserSpendUsd?: number;
   };
   /**
-   * Provisional until pinning the real response shape from hosted otari.ai; do not treat as a contract.
+   * The gateway's budget refusal that stopped the run (status, message and request id from the refused call), plus the capped key's request counter read from GET /key/budget around the run. Only status and message are required: runs stopped by a USD budget carry no request counter.
    */
   budgetStop?: {
     status: number;
     message: string;
     requestId?: string;
+    /**
+     * The gateway's error code for the refusal (Otari-Error-Code header or the body's code).
+     */
+    code?: string;
+    /**
+     * Otari-Budget-Scope header of the refusal: which budget refused (api_token for a key's budget, user for an end user's).
+     */
+    scope?: string;
+    /**
+     * Retry-After header of the refusal, when the gateway sent one. The run never retries a budget refusal.
+     */
+    retryAfterSeconds?: number;
+    /**
+     * request_limit on the key's budget before the run (GET /key/budget, limit_requests).
+     */
+    requestLimit?: number;
+    /**
+     * Requests the limit still allowed before the run (GET /key/budget, remaining_requests).
+     */
+    remainingBefore?: number;
+    /**
+     * The same reading after the run.
+     */
+    remainingAfter?: number;
+    /**
+     * Calls on the agent's key that the gateway served in this run before it refused one.
+     */
+    requestsServed?: number;
   };
 }
 /**

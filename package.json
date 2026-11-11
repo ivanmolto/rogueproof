@@ -29,6 +29,8 @@
     "run:safe": "pnpm --filter \"@rogueproof/orchestrator...\" build && node packages/orchestrator/dist/runSafe.js",
     "run:permissive": "pnpm --filter \"@rogueproof/orchestrator...\" build && node packages/orchestrator/dist/runPermissive.js",
     "run:control": "pnpm --filter \"@rogueproof/orchestrator...\" build && node packages/orchestrator/dist/runControl.js",
+    "run:budget": "pnpm --filter \"@rogueproof/orchestrator...\" build && node packages/orchestrator/dist/runBudget.js",
+    "budget:reset": "pnpm --filter \"@rogueproof/orchestrator...\" build && node packages/orchestrator/dist/budgetReset.js",
     "sandbox:shell": "pnpm --filter \"@rogueproof/orchestrator...\" build && node packages/orchestrator/dist/sandboxShell.js"
   },
   "devDependencies": {

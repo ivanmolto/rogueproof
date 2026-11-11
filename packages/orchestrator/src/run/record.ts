@@ -50,7 +50,19 @@ export interface RunFacts {
   registry?: { submissions: number; fakeSecrets?: readonly string[] };
   /** From GET /end-users/{id}; undefined when the gateway did not report it. */
   endUserSpendUsd: number | undefined;
+  /** The agent key's request counter (GET /key/budget) before and after the run; Budget-limited mode reads it. */
+  keyRequests?: KeyRequests;
 }
+
+/** A key's request-limited budget as GET /key/budget reports it. Every field is the gateway's own number. */
+export interface KeyRequests {
+  limit?: number;
+  remainingBefore?: number;
+  remainingAfter?: number;
+}
+
+const SERVED = new Set<GatewayCall["outcome"]>(["ok", "fallback", "tool_error"]);
+const wholeNumber = (v: number | undefined): v is number => v !== undefined && Number.isInteger(v) && v >= 0;
 
 /** The model that actually served a call: the Otari-Model header, else what was requested. */
 const served = (c: GatewayCall): string | undefined => c.otariHeaders?.["otari-model"] ?? c.model;
@@ -142,6 +154,16 @@ export function buildRunRecord(f: RunFacts): RunRecord {
       message: f.agent.error?.detail ?? f.agent.error?.code ?? "budget exceeded",
     };
     if (refusal?.requestId !== undefined) stop.requestId = refusal.requestId;
+    if (f.agent.error?.code !== undefined) stop.code = f.agent.error.code;
+    const scope = refusal?.headers["otari-budget-scope"];
+    if (scope !== undefined) stop.scope = scope;
+    const retryAfter = Number(refusal?.headers["retry-after"]);
+    if (refusal?.headers["retry-after"] !== undefined && Number.isFinite(retryAfter) && retryAfter >= 0) stop.retryAfterSeconds = retryAfter;
+    if (wholeNumber(f.keyRequests?.limit)) stop.requestLimit = f.keyRequests.limit;
+    if (wholeNumber(f.keyRequests?.remainingBefore)) stop.remainingBefore = f.keyRequests.remainingBefore;
+    if (wholeNumber(f.keyRequests?.remainingAfter)) stop.remainingAfter = f.keyRequests.remainingAfter;
+    // Calls on the agent's key that got a response; judge calls are on another key and another budget.
+    stop.requestsServed = agentCalls.filter((c) => SERVED.has(c.outcome)).length;
     record.budgetStop = stop;
   }
   // Keys cannot be in here (headers are picked and redacted by the client), but a

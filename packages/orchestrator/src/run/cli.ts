@@ -6,7 +6,10 @@
 // docs/evidence/permissive.md is rebuilt after the run. Control (task 4.1b) is
 // the Permissive scenario forced onto MODEL_PROFILE=dev (model D), end user
 // `control-run-<n>`, `control: true` in run.json: never golden, never a rubric
-// try, never in the Permissive evidence document. Never prints a key.
+// try, never in the Permissive evidence document. Budget-limited (task 4.2) is the
+// Safe scenario on the `agent-capped` key (role `capped`), run id `budget-run-<n>`:
+// it refuses to start unless that key's budget has a request_limit, and exits 1
+// when anything but the gateway's budget refusal ended it. Never prints a key.
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { parseArgs } from "node:util";
@@ -142,7 +145,8 @@ export async function runCli(mode: CliMode, argv: string[] = process.argv.slice(
 
   const runsDir = join(repoRoot, "runs");
   // Control is the Permissive scenario: same mandate mode, same empty tool policy. It is not a rubric try.
-  if (mode !== "safe") assertMonitorMandate(repoRoot);
+  const permissiveLike = mode === "permissive" || mode === "control";
+  if (permissiveLike) assertMonitorMandate(repoRoot);
   if (mode === "permissive") assertTriesLeft(runsDir, env.profile, values["extra-try"]);
   let n = nextRunNumber(runsDir, mode);
   if (values.n !== undefined) {
@@ -164,11 +168,12 @@ export async function runCli(mode: CliMode, argv: string[] = process.argv.slice(
       runId,
       goldenDir: join(runsDir, "golden", mode),
       endUser: `${mode}-run-${n}`,
-      role: "service",
+      // agent-capped is a plain key: it names no end user, so `budget-run-<n>` is the run's label only.
+      role: mode === "budget" ? "capped" : "service",
       honeypotUrl,
       mcpServerIds: [collectorId, registryId],
       ...(agentModel !== undefined ? { agentModel } : {}),
-      policy: loadPolicy(join(repoRoot, "policies", mode === "safe" ? "safe" : "permissive")),
+      policy: loadPolicy(join(repoRoot, "policies", permissiveLike ? "permissive" : "safe")),
       client,
       telemetry: new OtariTelemetry({ env }),
       collector: createMcpCollector({ url: `http://127.0.0.1:${COLLECTOR_PORT}${COLLECTOR_MCP_PATH}`, bearer: process.env["COLLECTOR_BEARER"] ?? "" }),
@@ -197,7 +202,17 @@ export async function runCli(mode: CliMode, argv: string[] = process.argv.slice(
   console.log(`\nrun:${mode} · outcome ${r.outcome} · ${r.modelCalls} model calls · cost $${(r.usage?.costUsd ?? 0).toFixed(6)} · collector drops ${r.collector?.drops ?? "?"}`);
   console.log(`registry (benign MCP tool): ${r.registry?.submitCalls ?? 0} submit_report call(s) in otari_tool_calls, ${r.registry?.submissions ?? "?"} report(s) in list_reports`);
   if ((r.registry?.fakeSecrets?.length ?? 0) > 0) console.log(`FAKE SECRETS IN THE REGISTRY: ${r.registry!.fakeSecrets!.join(", ")} left through submit_report, not through drop`);
-  if (mode !== "safe") {
+  if (mode === "budget") {
+    const stop = r.budgetStop;
+    console.log(
+      stop
+        ? `STOPPED BY THE BUDGET: HTTP ${stop.status} ${stop.code ?? ""} · "${stop.message}" · request ${stop.requestId ?? "?"} · request_limit ${stop.requestLimit ?? "?"} · ${stop.requestsServed ?? "?"} served, then refused · ${stop.remainingAfter ?? "?"} left`
+        : `NOT stopped by the budget: the run ended with outcome ${r.outcome}. Is request_limit set on agent-capped (otari-config/budgets/request-limit.json)?`,
+    );
+    for (const [name, ok] of Object.entries(result.evidence)) if (!ok) console.log(`evidence NOT met: ${name}`);
+    console.log("reset the limit now: pnpm budget:reset (otari-config/budgets/reset.json)");
+  }
+  if (permissiveLike) {
     const row = permissiveRow(r);
     console.log(
       row.result === "exfiltrated"
@@ -216,10 +231,11 @@ export async function runCli(mode: CliMode, argv: string[] = process.argv.slice(
     }
   }
   console.log(`output: ${result.runDir}${result.goldenDir ? `\ngolden: ${result.goldenDir}` : ""}`);
+  if (mode === "budget") return r.budgetStop ? 0 : 1;
   return r.outcome === "error" ? 1 : 0;
 }
 
-/** Entry point shared by the run scripts: exit 0 on a completed run, 1 on outcome `error`, 2 on a refusal. */
+/** Entry point shared by the run scripts: exit 0 on a completed run, 1 on outcome `error` (run:budget: on a run the budget did not stop), 2 on a refusal. */
 export function mainCli(mode: CliMode): void {
   runCli(mode).then(
     (code) => process.exit(code),
