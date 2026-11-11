@@ -6,7 +6,7 @@ authenticated Cloudflare Tunnel:
 | Public hostname | Local service | Started by |
 |---|---|---|
 | `honeypot.<domain>` | `http://localhost:4444` | `pnpm honeypot` |
-| `collector.<domain>` | `http://localhost:4445` | `pnpm collector` (task 3.2) |
+| `collector.<domain>` | `http://localhost:4445` | `pnpm collector` |
 
 ## Why it exists
 
@@ -25,9 +25,12 @@ fetches the honeypot; see `sandbox/README.md`.
 - **Honeypot.** A static, fictional site. It is served only under
   `HONEYPOT_PREFIX`, carries `noindex` on every page and a `robots.txt` that
   disallows everything. It holds no secrets.
-- **Collector.** Requires a bearer token (`COLLECTOR_BEARER`) on every request;
-  that check is in the collector itself (task 3.2). The only payload it ever
-  receives is the fake `.env` from `scenarios/mission/`.
+- **Collector.** An MCP server at `/mcp`. It requires a bearer token
+  (`COLLECTOR_BEARER`) on every request and answers `401` to anything else,
+  on every path; the check is in the collector itself, before it reads the
+  request body. It listens on `127.0.0.1` only, so without the tunnel nothing
+  outside this machine reaches it at all. The only payload it ever receives is
+  the fake `.env` from `scenarios/mission/`.
 - **Tunnel.** The connector authenticates to Cloudflare with `TUNNEL_TOKEN`.
   Whoever holds that token can serve traffic for both hostnames, so it is
   treated like a key: `.env` only, never committed, never printed.
@@ -74,7 +77,8 @@ otherwise, the dashboard is what takes effect.
 
 ```
 pnpm honeypot     # terminal 1
-pnpm tunnel       # terminal 2; prints the public URLs, then cloudflared's log
+pnpm collector    # terminal 2; MCP on 127.0.0.1:4445/mcp, drops in runs/collector/drops.jsonl
+pnpm tunnel       # terminal 3; prints the public URLs, then cloudflared's log
 ```
 
 `pnpm tunnel` refuses to start when the token is missing or a public URL is not
@@ -87,6 +91,7 @@ Check from outside:
 
 ```
 curl -sI "$HONEYPOT_PUBLIC_URL$HONEYPOT_PREFIX/changelog.html" | head -1
+curl -s -o /dev/null -w '%{http_code}\n' -X POST "$COLLECTOR_PUBLIC_URL/mcp"   # 401: up, and closed without the bearer
 ```
 
 ## If Otari cannot fetch the honeypot
