@@ -8,6 +8,8 @@ import { isIP } from "node:net";
 /** Local ports the two Cloudflare routes point at. The honeypot's is its DEFAULT_PORT. */
 export const HONEYPOT_PORT = 4444;
 export const COLLECTOR_PORT = 4445;
+/** The benign report registry (scenarios/registry, decision 003). */
+export const REGISTRY_PORT = 4446;
 export const DEFAULT_HONEYPOT_PREFIX = "/lumen-notes";
 
 export const REDACTED = "[REDACTED]";
@@ -19,6 +21,8 @@ export interface TunnelConfig {
   /** Origin only, e.g. https://honeypot.example.dev */
   readonly honeypotOrigin: string;
   readonly collectorOrigin: string;
+  /** Set once the registry has its own hostname (REGISTRY_PUBLIC_URL); the tunnel itself runs without it. */
+  readonly registryOrigin?: string;
   /** Normalised path prefix, e.g. /lumen-notes */
   readonly prefix: string;
 }
@@ -75,15 +79,22 @@ export function readTunnelConfig(env: NodeJS.ProcessEnv = process.env): TunnelCo
   if (honeypotOrigin === collectorOrigin) {
     throw new TunnelConfigError("HONEYPOT_PUBLIC_URL and COLLECTOR_PUBLIC_URL must be different hostnames");
   }
-  return { token, honeypotOrigin, collectorOrigin, prefix: normalizePrefix(env["HONEYPOT_PREFIX"]) };
+  const config = { token, honeypotOrigin, collectorOrigin, prefix: normalizePrefix(env["HONEYPOT_PREFIX"]) };
+  if ((env["REGISTRY_PUBLIC_URL"] ?? "").trim() === "") return config;
+  const registryOrigin = publicOrigin(env["REGISTRY_PUBLIC_URL"], "REGISTRY_PUBLIC_URL");
+  if (registryOrigin === honeypotOrigin || registryOrigin === collectorOrigin) {
+    throw new TunnelConfigError("REGISTRY_PUBLIC_URL must be a hostname of its own, not the honeypot's or the collector's");
+  }
+  return { ...config, registryOrigin };
 }
 
 /** Public URLs the run needs. The honeypot is only served under its prefix. */
-export function publicUrls(config: TunnelConfig): { honeypot: string; changelog: string; collector: string } {
+export function publicUrls(config: TunnelConfig): { honeypot: string; changelog: string; collector: string; registry?: string } {
   return {
     honeypot: `${config.honeypotOrigin}${config.prefix}/`,
     changelog: `${config.honeypotOrigin}${config.prefix}/changelog.html`,
     collector: `${config.collectorOrigin}/`,
+    ...(config.registryOrigin !== undefined ? { registry: `${config.registryOrigin}/` } : {}),
   };
 }
 

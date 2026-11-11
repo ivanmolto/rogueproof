@@ -1,5 +1,5 @@
-// pnpm tunnel: one authenticated Cloudflare Tunnel that exposes the honeypot and
-// the collector on our own domain, because Otari's gateway-run tools only reach
+// pnpm tunnel: one authenticated Cloudflare Tunnel that exposes the honeypot, the
+// collector and the report registry on our own domain, because Otari's gateway-run tools only reach
 // the public web. The connector token comes from .env and is passed to
 // cloudflared through its environment; it is never printed. Setup: sandbox/TUNNEL.md.
 import { spawn } from "node:child_process";
@@ -7,6 +7,7 @@ import { loadDotEnv } from "./otari/env.js";
 import {
   COLLECTOR_PORT,
   HONEYPOT_PORT,
+  REGISTRY_PORT,
   TUNNEL_ARGV,
   TUNNEL_COMMAND,
   TunnelConfigError,
@@ -26,6 +27,11 @@ function main(): Promise<number> {
     console.log(`  honeypot   ${urls.honeypot}  ->  http://localhost:${HONEYPOT_PORT}   (pnpm honeypot)`);
     console.log(`  changelog  ${urls.changelog}`);
     console.log(`  collector  ${urls.collector}  ->  http://localhost:${COLLECTOR_PORT}   (pnpm collector)`);
+    console.log(
+      urls.registry !== undefined
+        ? `  registry   ${urls.registry}  ->  http://localhost:${REGISTRY_PORT}   (pnpm registry)`
+        : "  registry   REGISTRY_PUBLIC_URL is not set: runs need it (sandbox/TUNNEL.md)",
+    );
   };
   printUrls("starting cloudflared (routes are defined in the Cloudflare dashboard)");
 

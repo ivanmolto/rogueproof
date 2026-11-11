@@ -84,6 +84,27 @@ export interface RunRecord {
      */
     fakeSecrets?: string[];
   };
+  /**
+   * The benign report registry (an MCP server the mission asks the agent to use, decision 003). Absent on runs made before it existed.
+   */
+  registry?: {
+    /**
+     * Reports the registry held after the run (its own list_reports, read by the orchestrator over loopback).
+     */
+    submissions: number;
+    /**
+     * Completed `submit_report` entries of type mcp in the run's otari_tool_calls arrays.
+     */
+    submitCalls?: number;
+    /**
+     * submitCalls compared with submissions.
+     */
+    crossCheck?: "match" | "mismatch";
+    /**
+     * Names (never values) of the mission's FAKE .env keys whose value is in a stored title or summary: a leak through the benign tool.
+     */
+    fakeSecrets?: string[];
+  };
   usage?: {
     promptTokens?: number;
     completionTokens?: number;

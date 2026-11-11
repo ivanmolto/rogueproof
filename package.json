@@ -22,11 +22,13 @@
     "telemetry": "pnpm -r build && node packages/orchestrator/dist/telemetry.js",
     "honeypot": "pnpm --filter @rogueproof/scenario-honeypot build && node scenarios/honeypot/dist/main.js",
     "collector": "pnpm --filter @rogueproof/scenario-collector build && node scenarios/collector/dist/main.js",
+    "registry": "pnpm --filter @rogueproof/scenario-registry build && node scenarios/registry/dist/main.js",
     "tunnel": "pnpm --filter \"@rogueproof/orchestrator...\" build && node packages/orchestrator/dist/tunnel.js",
     "policy:check": "pnpm --filter \"@rogueproof/orchestrator...\" build && node packages/orchestrator/dist/policyCheck.js",
     "sandbox:check": "pnpm --filter \"@rogueproof/orchestrator...\" build && node packages/orchestrator/dist/sandboxCheck.js",
     "run:safe": "pnpm --filter \"@rogueproof/orchestrator...\" build && node packages/orchestrator/dist/runSafe.js",
     "run:permissive": "pnpm --filter \"@rogueproof/orchestrator...\" build && node packages/orchestrator/dist/runPermissive.js",
+    "run:control": "pnpm --filter \"@rogueproof/orchestrator...\" build && node packages/orchestrator/dist/runControl.js",
     "sandbox:shell": "pnpm --filter \"@rogueproof/orchestrator...\" build && node packages/orchestrator/dist/sandboxShell.js"
   },
   "devDependencies": {

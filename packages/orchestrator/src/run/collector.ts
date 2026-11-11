@@ -22,6 +22,26 @@ export interface CollectorPort {
 }
 
 export const COLLECTOR_MCP_PATH = "/mcp";
+
+/**
+ * What differs between the two loopback mocks the orchestrator operates: the
+ * collector (the attacker's sink) and the report registry (the benign server
+ * the mission asks for, decision 003). Tool names and result shapes are
+ * restated from scenarios/collector and scenarios/registry.
+ */
+export interface McpSurface {
+  label: string;
+  clear: string;
+  list: string;
+  /** Key of the array in the list tool's result. */
+  items: string;
+  /** String fields of one item that make up what was stored. */
+  text: readonly string[];
+  bearerEnv: string;
+}
+export const COLLECTOR_SURFACE: McpSurface = { label: "collector", clear: "clear_drops", list: "list_drops", items: "drops", text: ["payload"], bearerEnv: "COLLECTOR_BEARER" };
+export const REGISTRY_SURFACE: McpSurface = { label: "registry", clear: "clear_reports", list: "list_reports", items: "reports", text: ["title", "summary"], bearerEnv: "REGISTRY_BEARER" };
+export const REGISTRY_MCP_PATH = "/mcp";
 export const MCP_PROTOCOL_VERSION = "2025-03-26";
 const TIMEOUT_MS = 10_000;
 const MAX_BODY_BYTES = 4 * 1024 * 1024;
@@ -35,6 +55,8 @@ export interface McpCollectorOptions {
   url: string;
   bearer: string;
   fetch?: typeof fetch;
+  /** Which mock this is; the collector by default. */
+  surface?: McpSurface;
 }
 
 const isObj = (v: unknown): v is Record<string, unknown> => typeof v === "object" && v !== null && !Array.isArray(v);
@@ -70,12 +92,12 @@ export function parseRpcResponse(contentType: string, text: string, id: number):
  * `[…]`, `{drops: […]}` or `{count: n}`. Anything else is undefined: the
  * caller refuses to call the collector empty on a result it cannot read.
  */
-export function countDrops(result: unknown): number | undefined {
+export function countDrops(result: unknown, items = "drops"): number | undefined {
   if (!isObj(result)) return undefined;
   const from = (v: unknown): number | undefined => {
     if (Array.isArray(v)) return v.length;
     if (!isObj(v)) return undefined;
-    if (Array.isArray(v["drops"])) return v["drops"].length;
+    if (Array.isArray(v[items])) return v[items].length;
     const n = v["count"];
     return typeof n === "number" && Number.isInteger(n) && n >= 0 ? n : undefined;
   };
@@ -92,15 +114,15 @@ export function countDrops(result: unknown): number | undefined {
 }
 
 /** The payloads in a `list_drops` result (`{drops: [{payload}]}`), oldest first; undefined when it has another shape. */
-export function dropPayloads(result: unknown): string[] | undefined {
+export function dropPayloads(result: unknown, items = "drops", fields: readonly string[] = ["payload"]): string[] | undefined {
   if (!isObj(result)) return undefined;
   const from = (v: unknown): string[] | undefined => {
-    const drops = isObj(v) ? v["drops"] : v;
+    const drops = isObj(v) ? v[items] : v;
     if (!Array.isArray(drops)) return undefined;
     const out: string[] = [];
     for (const d of drops) {
-      if (!isObj(d) || typeof d["payload"] !== "string") return undefined;
-      out.push(d["payload"]);
+      if (!isObj(d) || !fields.every((f) => typeof d[f] === "string")) return undefined;
+      out.push(fields.map((f) => d[f] as string).join("\n"));
     }
     return out;
   };
@@ -121,11 +143,12 @@ export interface McpCollector extends CollectorPort {
 }
 
 export function createMcpCollector(o: McpCollectorOptions): McpCollector {
+  const s = o.surface ?? COLLECTOR_SURFACE;
   const url = new URL(o.url);
   if (url.protocol !== "http:" || !["127.0.0.1", "localhost", "[::1]"].includes(url.hostname)) {
-    throw new CollectorError("the collector is a loopback mock; its operator URL must be http on 127.0.0.1");
+    throw new CollectorError(`the ${s.label} is a loopback mock; its operator URL must be http on 127.0.0.1`);
   }
-  if (o.bearer.trim() === "") throw new CollectorError("COLLECTOR_BEARER is not set");
+  if (o.bearer.trim() === "") throw new CollectorError(`${s.bearerEnv} is not set`);
   const doFetch = o.fetch ?? fetch;
   const clean = (s: string) => redactString(s).split(o.bearer).join("[REDACTED]");
   let nextId = 0;
@@ -144,7 +167,7 @@ export function createMcpCollector(o: McpCollectorOptions): McpCollector {
         signal: AbortSignal.timeout(TIMEOUT_MS),
       });
     } catch (e) {
-      throw new CollectorError(clean(`collector unreachable at ${url.origin} (is \`pnpm collector\` running?): ${e instanceof Error ? e.message : String(e)}`));
+      throw new CollectorError(clean(`${s.label} unreachable at ${url.origin} (is \`pnpm ${s.label}\` running?): ${e instanceof Error ? e.message : String(e)}`));
     }
   }
 
@@ -152,18 +175,18 @@ export function createMcpCollector(o: McpCollectorOptions): McpCollector {
     const id = ++nextId;
     const res = await post({ id, method, params }, session);
     const text = (await res.text()).slice(0, MAX_BODY_BYTES);
-    if (!res.ok) throw new CollectorError(clean(`collector answered HTTP ${res.status} to ${method}`));
+    if (!res.ok) throw new CollectorError(clean(`${s.label} answered HTTP ${res.status} to ${method}`));
     const msg = parseRpcResponse(res.headers.get("content-type") ?? "", text, id);
-    if (!msg) throw new CollectorError(`collector gave no JSON-RPC answer to ${method}`);
+    if (!msg) throw new CollectorError(`${s.label} gave no JSON-RPC answer to ${method}`);
     if (msg["error"] !== undefined) {
       const err = msg["error"];
-      throw new CollectorError(clean(`collector refused ${method}: ${isObj(err) && typeof err["message"] === "string" ? err["message"].slice(0, 200) : "error"}`));
+      throw new CollectorError(clean(`${s.label} refused ${method}: ${isObj(err) && typeof err["message"] === "string" ? err["message"].slice(0, 200) : "error"}`));
     }
     return { result: msg["result"], session: res.headers.get("mcp-session-id") ?? session };
   }
 
   /** One short MCP session per operation: initialize, initialized, one tools/call. */
-  async function callTool(name: "clear_drops" | "list_drops"): Promise<unknown> {
+  async function callTool(name: string): Promise<unknown> {
     const init = await request(
       "initialize",
       { protocolVersion: MCP_PROTOCOL_VERSION, capabilities: {}, clientInfo: { name: "rogueproof-orchestrator", version: "0.0.0" } },
@@ -171,22 +194,22 @@ export function createMcpCollector(o: McpCollectorOptions): McpCollector {
     );
     await post({ method: "notifications/initialized" }, init.session);
     const { result } = await request("tools/call", { name, arguments: {} }, init.session);
-    if (isObj(result) && result["isError"] === true) throw new CollectorError(`collector tool ${name} reported an error`);
+    if (isObj(result) && result["isError"] === true) throw new CollectorError(`${s.label} tool ${name} reported an error`);
     return result;
   }
 
   return {
     async clear() {
-      await callTool("clear_drops");
+      await callTool(s.clear);
     },
     async count() {
-      const n = countDrops(await callTool("list_drops"));
-      if (n === undefined) throw new CollectorError("could not read the collector's list_drops result; refusing to guess how many drops it holds");
+      const n = countDrops(await callTool(s.list), s.items);
+      if (n === undefined) throw new CollectorError(`could not read the ${s.label}'s ${s.list} result; refusing to guess how many ${s.items} it holds`);
       return n;
     },
     async payloads() {
-      const p = dropPayloads(await callTool("list_drops"));
-      if (p === undefined) throw new CollectorError("could not read the collector's list_drops result");
+      const p = dropPayloads(await callTool(s.list), s.items, s.text);
+      if (p === undefined) throw new CollectorError(`could not read the ${s.label}'s ${s.list} result`);
       return p;
     },
   };
