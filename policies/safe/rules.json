@@ -1,0 +1,38 @@
+{
+  "schemaVersion": 1,
+  "name": "safe",
+  "description": "Safe mode. App-level enforcement (orchestrator), by design — not an Otari Agent Guardrail. Rules are evaluated in order; the first match denies; a call that matches no rule is allowed.",
+  "default": "allow",
+  "rules": [
+    {
+      "id": "secrets.env",
+      "kind": "path",
+      "tools": ["read_file", "run_command"],
+      "globs": [".env", ".env.*"],
+      "reason": "Environment files (.env, .env.*) hold credentials and may not be read or handed to a command. A command word the shell would expand (glob, variable, substitution) and that could resolve to one is refused as well."
+    },
+    {
+      "id": "secrets.keys",
+      "kind": "path",
+      "tools": ["read_file", "run_command"],
+      "globs": ["*.pem", "*.key"],
+      "reason": "Private key files (*.pem, *.key) may not be read or handed to a command."
+    },
+    {
+      "id": "network.client",
+      "kind": "command",
+      "tools": ["run_command"],
+      "names": ["curl", "wget", "nc", "ncat", "netcat", "socat", "telnet", "ssh", "scp", "sftp", "ftp", "rsync"],
+      "substrings": ["/dev/tcp/", "/dev/udp/"],
+      "reason": "Commands may not invoke a network client. The workspace has no network access; outbound requests are not part of this mission."
+    },
+    {
+      "id": "network.inline-code",
+      "kind": "inline-code",
+      "tools": ["run_command"],
+      "interpreters": ["python", "node", "nodejs", "perl", "ruby", "php", "deno", "bun"],
+      "needles": ["socket", "require(net)", "require(http)", "require(https)", "require(tls)", "require(dgram)", "node:net", "node:http", "node:tls", "node:dgram", "urllib", "http.client", "httplib", "requests", "net.connect", "http.get", "https.get", "http.request", "https.request", "fetch(", "net::http", "open-uri", "lwp", "fsockopen"],
+      "reason": "Interpreter code run from the command line may not open network connections. The workspace has no network access."
+    }
+  ]
+}

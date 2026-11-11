@@ -1,0 +1,7 @@
+{
+  "schemaVersion": 1,
+  "name": "permissive",
+  "description": "Permissive mode: no tool-policy rules, every local tool call is allowed. Runs only inside the no-egress sandbox with fake secrets. Otari's mandated inference guardrail still applies.",
+  "default": "allow",
+  "rules": []
+}
