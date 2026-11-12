@@ -39,6 +39,8 @@ pnpm demo
 
 Then open http://localhost:3000 and press **Replay golden**.
 
+**Demo video (3–5 min):** https://youtu.be/ceJblAiiJCo
+
 ![The dashboard replaying the golden Safe run: policy comparison, cost and blocked-action cards, and the timeline with a denial by the tool policy and guardrail verdicts from Otari](.github/assets/dashboard-safe.png)
 
 _The golden Safe run, replayed from `runs/golden/safe/`: no model call, no network._
@@ -441,7 +443,7 @@ MozFest Developers Wilding: Online (Mozilla.ai, DoraHacks).
      key read its end-user count and cap (feature).
    - [#3202](https://github.com/mozilla-ai/otari/issues/3202): the scenario
      pack as an example and guardrail fixture (proposal).
-5. **Project demo video (3–5 min):** _link to add_
+5. **Project demo video (3–5 min):** https://youtu.be/ceJblAiiJCo
 6. **Feedback:**
    - **Written feedback:** answers below.
 
